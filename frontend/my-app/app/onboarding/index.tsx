@@ -1,6 +1,8 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { router } from 'expo-router';
+
+const { width } = Dimensions.get('window');
 
 export default function Onboarding() {
   const goTo = (route: '/login' | '/signup') => {
@@ -38,34 +40,50 @@ export default function Onboarding() {
 
 const styles = StyleSheet.create({
   slide: {
-    flex: 1, justifyContent: 'center',
-    padding: 30, backgroundColor: '#fff'
+    flex: 1,
+    justifyContent: 'center',
+    padding: 30,
+    backgroundColor: '#fff',
   },
   title: {
-    fontSize: 26, fontWeight: '800',
-    textAlign: 'center', marginBottom: 12
+    fontSize: 26,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 12,
   },
   subtitle: {
-    fontSize: 16, color: '#555', textAlign: 'center'
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
   },
   titleDark: {
-    fontSize: 26, fontWeight: '800', color: '#fff',
-    textAlign: 'center', marginBottom: 12
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 12,
   },
   subtitleDark: {
-    fontSize: 16, color: '#ccc', textAlign: 'center'
+    fontSize: 16,
+    color: '#ccc',
+    textAlign: 'center',
   },
   buttonRow: {
-    flexDirection: 'row', justifyContent: 'center',
-    marginTop: 30, gap: 20
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 30,
+    gap: 20,
   },
   button: {
     backgroundColor: '#5B4EFF',
-    paddingVertical: 14, paddingHorizontal: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 12,
   },
   buttonText: {
-    color: '#fff', fontWeight: '600', fontSize: 16
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
 

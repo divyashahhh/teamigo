@@ -38,6 +38,9 @@ export default function SignupScreen() {
 
   return (
     <View style={styles.container}>
+      <Pressable onPress={() => router.replace('/onboarding')}>
+  <Text style={styles.back}>← Back </Text>
+</Pressable>
       <Text style={styles.title}>Create a Teamigo account</Text>
       <Text style={styles.subtitle}>Let’s get you set up</Text>
 
@@ -100,6 +103,16 @@ const styles = StyleSheet.create({
     textAlign: 'center', color: 'white',
     fontSize: 16, fontWeight: '600',
   },
+  back: {
+    color: '#5B4EFF',
+    fontWeight: '600',
+    marginBottom: 16,
+    fontSize: 16,
+  }
 });
+
+
+
+
 
 

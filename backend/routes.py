@@ -43,6 +43,6 @@ def login():
 
         return jsonify({'error': 'Invalid credentials'}), 401
     except Exception as e:
-        print("Login error:", e)
+        print(f"Login error: {e}")
         return jsonify({'error': 'Server error'}), 500
     

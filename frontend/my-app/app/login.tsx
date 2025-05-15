@@ -29,7 +29,6 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('isLoggedIn', 'true');
         await AsyncStorage.setItem('userName', data.name);
         router.replace('/(tabs)');   
-           
       } else {
         const data = await res.json();
         Alert.alert('Login Failed', data.error || 'Invalid credentials');
@@ -42,6 +41,9 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <Pressable onPress={() => router.replace('/onboarding')}>
+  <Text style={styles.back}>← Back </Text>
+</Pressable>
       <Text style={styles.title}>Login to your account.</Text>
       <Text style={styles.subtitle}>Hello, welcome back to your account</Text>
 
@@ -109,4 +111,10 @@ const styles = StyleSheet.create({
     textAlign: 'center', color: 'white',
     fontSize: 16, fontWeight: '600',
   },
+  back: {
+    color: '#5B4EFF',
+    fontWeight: '600',
+    marginBottom: 16,
+    fontSize: 16,
+  }
 });
