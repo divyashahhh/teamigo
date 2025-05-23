@@ -59,7 +59,7 @@ export default function Onboarding() {
   const animateSlide = (index: number) => {
     Animated.timing(animations[index], {
       toValue: 1,
-      duration: 700,
+      duration: 450,
       useNativeDriver: true,
     }).start();
   };

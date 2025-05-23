@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView, Platform
+  View, Text, StyleSheet, TouchableOpacity,
+  ScrollView, Platform
 } from 'react-native';
 
 export default function AnnouncementsScreen() {
@@ -13,49 +14,50 @@ export default function AnnouncementsScreen() {
   const filter2Options = ['Most Recent', 'Most Nearby', 'Most Urgent'];
 
   const renderFilter = (label: string, current: string, setCurrent: Function, options: string[]) => (
-    <View style={styles.filterBox}>
-      <Pressable onPress={() => {
+    <TouchableOpacity
+      onPress={() => {
         const index = options.indexOf(current);
         setCurrent(options[(index + 1) % options.length]);
-      }}>
-        <Text style={styles.filterText}>{label}: {current}</Text>
-      </Pressable>
-    </View>
+      }}
+      style={styles.filterButton}
+    >
+      <Text style={styles.filterText}>{label}: {current}</Text>
+    </TouchableOpacity>
   );
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
+      {/* Top Tab Switcher */}
       <View style={styles.tabRow}>
         {tabs.map(tab => (
-          <Pressable
+          <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            style={[styles.tabButton, activeTab === tab && styles.activeTab]}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-          </Pressable>
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              {tab}
+            </Text>
+          </TouchableOpacity>
         ))}
       </View>
 
+      {/* Filter Buttons */}
       <View style={styles.filterRow}>
         {renderFilter('Show', filter1, setFilter1, filter1Options)}
         {renderFilter('Sort', filter2, setFilter2, filter2Options)}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>📢 Announcement Title</Text>
-        <Text style={styles.cardBody}>Details about your announcement go here.</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>📢 Announcement Title</Text>
-        <Text style={styles.cardBody}>Details about your announcement go here.</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>📢 Announcement Title</Text>
-        <Text style={styles.cardBody}>Details about your announcement go here.</Text>
-      </View>
+      {/* Announcement Cards */}
+      {[1, 2, 3].map(i => (
+        <View key={i} style={styles.card}>
+          <Text style={styles.cardTitle}>📢 Announcement Title {i}</Text>
+          <Text style={styles.cardBody}>Details about your announcement go here. You can customize this card per post.</Text>
+          <TouchableOpacity style={styles.viewMoreBtn}>
+            <Text style={styles.viewMoreText}>View More</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
     </ScrollView>
   );
 }
@@ -66,59 +68,84 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 60 : 80,
     paddingHorizontal: 20,
   },
+
+  // Tabs
   tabRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  tabButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginHorizontal: 6,
+    backgroundColor: '#eee',
+    borderRadius: 18,
+  },
+  activeTab: {
+    backgroundColor: '#00b2a9',
+  },
+  tabText: {
+    fontSize: 15,
+    color: '#555',
+  },
+  activeTabText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+  // Filters
+  filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 20,
   },
-  tab: {
-    paddingBottom: 8,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: {
-    borderBottomColor: '#1976D2',
-  },
-  tabText: {
-    fontSize: 16,
-    color: '#888',
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: '#1976D2',
-    fontWeight: '700',
-  },
-  filterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  filterBox: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
+  filterButton: {
+    backgroundColor: '#f2f2f2',
+    borderRadius: 18,
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    flex: 1,
-    marginHorizontal: 6,
+    paddingHorizontal: 18,
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 13,
+    color: '#2E2A5B',
     fontWeight: '600',
-    color: '#333',
   },
+
+  // Cards
   card: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 3,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 6,
+    color: '#333',
   },
   cardBody: {
     fontSize: 14,
     color: '#555',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  viewMoreBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#2E2A5B',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+  },
+  viewMoreText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

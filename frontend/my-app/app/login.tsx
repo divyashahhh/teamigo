@@ -26,9 +26,18 @@ export default function LoginScreen() {
 
       if (res.ok) {
         const data = await res.json();
+
+        
         await AsyncStorage.setItem('isLoggedIn', 'true');
         await AsyncStorage.setItem('userName', data.name);
-        router.replace('/(tabs)');
+        await AsyncStorage.setItem('userRole', data.role);
+
+        // based on role
+        if (data.role === 'host') {
+          router.replace('/host/setup' as never); 
+        } else {
+          router.replace('/(tabs)');
+        }
       } else {
         const data = await res.json();
         Alert.alert('Login Failed', data.error || 'Invalid credentials');
@@ -42,12 +51,8 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <Pressable onPress={() => router.replace('/onboarding')}>
-        <Text style={styles.back}>← Back                                                                
-          
-        </Text>
+        <Text style={styles.back}>← Back</Text>
       </Pressable>
-
-
 
       <Text style={styles.title}>Login to your account</Text>
       <Text style={styles.subtitle}>Welcome back to Teamigo</Text>
@@ -95,6 +100,8 @@ export default function LoginScreen() {
     </View>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {
