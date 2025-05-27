@@ -31,6 +31,7 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('isLoggedIn', 'true');
         await AsyncStorage.setItem('userName', data.name);
         await AsyncStorage.setItem('userRole', data.role);
+        await AsyncStorage.setItem('userId', data.id.toString());
 
         // based on role
         if (data.role === 'host') {

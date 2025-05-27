@@ -7,16 +7,45 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.teamigo.app",
+      "config": {
+        "usesNonExemptEncryption": false,
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to show you nearby matches and events.",
+        "NSLocationAlwaysUsageDescription": "We need your location to show you nearby matches and events.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.teamigo.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -26,15 +55,11 @@
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",
+        "expo-location",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "locationAlwaysAndWhenInUsePermission": "Allow Teamigo to use your location to show you nearby matches and events."
         }
-      ],
-      "expo-font"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
