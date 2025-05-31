@@ -20,7 +20,7 @@ interface Invite {
   };
   host: string;
   time: string;
-  image: any; // Using any for require() image type
+  image: any; 
 }
 
 const invites: Invite[] = [

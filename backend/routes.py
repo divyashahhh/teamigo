@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
-from models import db, User, Chat, Message
+from models import db, User, Chat, Message, CalendarEvent
 from flask_bcrypt import Bcrypt
-from models import CalendarEvent 
 from flask_cors import cross_origin
 from datetime import datetime
 
@@ -48,7 +47,7 @@ def login():
     except Exception as e:
         print(f"Login error: {e}")
         return jsonify({'error': 'Server error'}), 500
-    
+
 @auth_bp.route('/events', methods=['POST'])
 @cross_origin()
 def create_event():
@@ -84,8 +83,7 @@ def get_events(user_id):
         return jsonify([event.to_dict() for event in events]), 200
     except Exception as e:
         print("Get Events error:", e)
-        return jsonify({'error': 'Server error'}), 500\
-        
+        return jsonify({'error': 'Server error'}), 500
 
 @auth_bp.route('/events/<int:event_id>', methods=['PUT'])
 def update_event(event_id):
@@ -98,7 +96,6 @@ def update_event(event_id):
     event.color = data.get('color', event.color)
     db.session.commit()
     return jsonify({'message': 'Event updated', 'event': event.to_dict()}), 200
-
 
 @auth_bp.route('/events/<int:event_id>', methods=['DELETE'])
 def delete_event(event_id):
@@ -116,52 +113,57 @@ def search_users():
     query = request.args.get('q', '')
     if not query:
         return jsonify([]), 200
-    
+
     users = User.query.filter(
         (User.name.ilike(f'%{query}%')) | 
         (User.email.ilike(f'%{query}%'))
     ).limit(20).all()
-    
+
     return jsonify([user.to_dict() for user in users]), 200
 
 @auth_bp.route('/chats', methods=['GET'])
 @cross_origin()
 def get_user_chats():
     user_id = request.args.get('user_id')
+    print(f"[DEBUG] /chats called with user_id={user_id}")
+
     if not user_id:
         return jsonify({'error': 'User ID required'}), 400
-    
+
     user = User.query.get(user_id)
     if not user:
+        print(f"[404] No user found with ID: {user_id}")
         return jsonify({'error': 'User not found'}), 404
-    
+
     chats = user.chats.order_by(Chat.updated_at.desc()).all()
     return jsonify([chat.to_dict() for chat in chats]), 200
 
 @auth_bp.route('/chats', methods=['POST'])
 @cross_origin()
 def create_chat():
-    data = request.get_json()
-    user_ids = data.get('user_ids', [])
-    
-    if len(user_ids) < 2:
-        return jsonify({'error': 'At least 2 participants required'}), 400
-    
-    # Check if chat already exists between these users
-    existing_chats = Chat.query.all()
-    for chat in existing_chats:
-        if set(p.id for p in chat.participants) == set(user_ids):
-            return jsonify(chat.to_dict()), 200
-    
-    # Create new chat
-    chat = Chat()
-    participants = User.query.filter(User.id.in_(user_ids)).all()
-    chat.participants = participants
-    
-    db.session.add(chat)
-    db.session.commit()
-    
-    return jsonify(chat.to_dict()), 201
+    try:
+        data = request.get_json()
+        user_ids = data.get('user_ids', [])
+
+        if len(user_ids) < 2:
+            return jsonify({'error': 'At least 2 participants required'}), 400
+
+        existing_chats = Chat.query.all()
+        for chat in existing_chats:
+            if set(p.id for p in chat.participants) == set(user_ids):
+                return jsonify(chat.to_dict()), 200
+
+        chat = Chat()
+        participants = User.query.filter(User.id.in_(user_ids)).all()
+        chat.participants = participants
+        db.session.add(chat)
+        db.session.commit()
+
+        return jsonify(chat.to_dict()), 201
+
+    except Exception as e:
+        print(f"[500] Chat creation error: {e}")
+        return jsonify({'error': 'Server error creating chat'}), 500
 
 @auth_bp.route('/chats/<int:chat_id>/messages', methods=['GET'])
 @cross_origin()
@@ -169,7 +171,7 @@ def get_messages(chat_id):
     chat = Chat.query.get(chat_id)
     if not chat:
         return jsonify({'error': 'Chat not found'}), 404
-    
+
     messages = chat.messages.order_by(Message.created_at.desc()).all()
     return jsonify([message.to_dict() for message in messages]), 200
 
@@ -180,23 +182,23 @@ def send_message():
     chat_id = data.get('chat_id')
     sender_id = data.get('sender_id')
     content = data.get('content')
-    
+
     if not all([chat_id, sender_id, content]):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     message = Message(
         chat_id=chat_id,
         sender_id=sender_id,
         content=content
     )
-    
+
     chat = Chat.query.get(chat_id)
     if chat:
         chat.updated_at = datetime.utcnow()
-    
+
     db.session.add(message)
     db.session.commit()
-    
+
     return jsonify(message.to_dict()), 201
 
 @auth_bp.route('/messages/<int:message_id>/read', methods=['POST'])
@@ -205,9 +207,77 @@ def mark_as_read(message_id):
     message = Message.query.get(message_id)
     if not message:
         return jsonify({'error': 'Message not found'}), 404
-    
+
     message.is_read = True
     db.session.commit()
-    
+
     return jsonify(message.to_dict()), 200
+
+
+@auth_bp.route('/save-event', methods=['POST'])
+@cross_origin()
+def save_event():
+    data = request.get_json()
+
+    required_fields = ['id', 'date', 'text', 'color']
+    if not all(field in data for field in required_fields):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    print(f"[INFO] /save-event received: {data}")
+    return jsonify({'success': True, 'message': 'Event received'}), 200
+
+@auth_bp.route('/apple-login', methods=['POST'])
+@cross_origin()
+def apple_login():
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        name = data.get('name') or "Apple User"
+        apple_user_id = data.get('apple_user_id')
+
+        if not email:
+            return jsonify({'error': 'Email is required for Apple login'}), 400
+
+        user = User.query.filter_by(email=email).first()
+
+        if not user:
+            user = User(
+                email=email,
+                name=name,
+                password=None,
+                role='member'
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        return jsonify(user.to_dict()), 200
+
+    except Exception as e:
+        print(f"[500] Apple login error: {e}")
+        return jsonify({'error': 'Server error during Apple login'}), 500
     
+@auth_bp.route('/users/<int:user_id>', methods=['PUT'])
+@cross_origin()
+def update_user(user_id):
+    try:
+        print(f"🔍 PUT /users/{user_id}")
+        user = User.query.get(user_id)
+        if not user:
+            print(f"[404] No user found with ID: {user_id}")
+            return jsonify({'error': 'User not found'}), 404
+
+        data = request.get_json()
+        new_name = data.get('name')
+
+        if not new_name:
+            return jsonify({'error': 'Missing name'}), 400
+
+        user.name = new_name
+        db.session.commit()
+
+        print(f"[200] Updated name for user {user_id} to {new_name}")
+        return jsonify({'message': 'User updated successfully', 'user': user.to_dict()}), 200
+
+    except Exception as e:
+        print(f"[500] Error updating user: {e}")
+        return jsonify({'error': 'Server error updating user'}), 500

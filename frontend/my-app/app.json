@@ -1,14 +1,15 @@
 {
   "expo": {
-    "name": "my-app",
-    "slug": "my-app",
+    "name": "Teamigo",
+    "slug": "teamigo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "icon": "./assets/images/image.png",
+    "scheme": "teamigo",
+    "owner": "divyashahhh",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/images/image.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,10 +18,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.teamigo.app",
+      "bundleIdentifier": "com.divyashahhh.teamigo",
       "config": {
         "usesNonExemptEncryption": false,
-        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+        "googleSignIn": {
+          "reservedClientId": "477934222059-6ajo0nt4p6iuo7j1t0ggc3beojamsjhr.apps.googleusercontent.com"
+        }
       },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We need your location to show you nearby matches and events.",
@@ -36,17 +39,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.teamigo.app",
-      "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ],
-      "config": {
-        "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
-        }
-      }
-    },
+      
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -59,10 +52,18 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Teamigo to use your location to show you nearby matches and events."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "teamigo"
+      }
+    },
+    "originalFullName": "@divyashahhh/teamigo"
   }
+}
 }

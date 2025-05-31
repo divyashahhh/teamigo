@@ -10,24 +10,30 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-
+import axios from 'axios';
+import { useIsFocused } from '@react-navigation/native';
+const BACKEND_URL = 'http://192.168.1.116:5002';
 export default function HomeTab() {
   const [userName, setUserName] = useState('User');
   const today = new Date().toDateString();
 
-  useEffect(() => {
-    const fetchName = async () => {
-      const name = await AsyncStorage.getItem('userName');
-      if (name) setUserName(name);
-    };
-    fetchName();
-  }, []);
+  const isFocused = useIsFocused();
+
+useEffect(() => {
+  const fetchName = async () => {
+    const name = await AsyncStorage.getItem('userName');
+    if (name) setUserName(name);
+  };
+  fetchName();
+}, [isFocused]);
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello, {userName.charAt(0).toUpperCase() + userName.slice(1)}</Text>
+          <Text style={styles.greeting}>
+            Hello, {userName.charAt(0).toUpperCase() + userName.slice(1)}
+          </Text>
           <Text style={styles.date}>{`Today ${today}`}</Text>
         </View>
         <View style={styles.topIcons}>
@@ -218,5 +224,3 @@ const styles = StyleSheet.create({
     color: '#444',
   },
 });
-
-

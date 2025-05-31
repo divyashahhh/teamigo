@@ -11,6 +11,11 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { signInWithApple } from '../utils/appleAuth';
+import axios from 'axios';
+
+const BACKEND_URL = 'http://192.168.1.116:5002';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -18,7 +23,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch('http://192.168.1.116:5002/login', {
+      const res = await fetch(`${BACKEND_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -27,15 +32,13 @@ export default function LoginScreen() {
       if (res.ok) {
         const data = await res.json();
 
-        
         await AsyncStorage.setItem('isLoggedIn', 'true');
         await AsyncStorage.setItem('userName', data.name);
         await AsyncStorage.setItem('userRole', data.role);
         await AsyncStorage.setItem('userId', data.id.toString());
 
-        // based on role
         if (data.role === 'host') {
-          router.replace('/host/setup' as never); 
+          router.replace('/host/setup' as never);
         } else {
           router.replace('/(tabs)');
         }
@@ -46,6 +49,53 @@ export default function LoginScreen() {
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Something went wrong.');
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    try {
+      const result = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+  
+      if (!result) {
+        Alert.alert('Apple Sign-In Failed');
+        return;
+      }
+  
+      const generatedEmail = result.email || `${result.user}@privaterelay.appleid.com`;
+
+      const payload = {
+      email: generatedEmail,
+      name: result.fullName?.givenName || 'Apple User',
+      apple_user_id: result.user,
+      };
+  
+      console.log('🔒 Apple Payload:', payload);
+  
+      const response = await axios.post(`${BACKEND_URL}/apple-login`, payload);
+      const user = response.data;
+  
+  
+      await AsyncStorage.setItem('isLoggedIn', 'true');
+      await AsyncStorage.setItem('userId', user.id.toString());
+      await AsyncStorage.setItem('userName', user.name || 'Apple User');
+      await AsyncStorage.setItem('userRole', user.role || 'member');
+  
+      console.log('✅ Logged in as:', user.name, `(ID: ${user.id})`);
+  
+      if (user.role === 'host') {
+        router.replace('/host/setup' as never);
+      } else {
+        router.replace('/(tabs)');
+      }
+  
+    } catch (err) {
+      console.error('Apple login error:', err);
+      Alert.alert('Apple Login Failed', 'Could not authenticate with Apple.');
     }
   };
 
@@ -88,6 +138,20 @@ export default function LoginScreen() {
         <Pressable style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginText}>Log In</Text>
         </Pressable>
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <AppleAuthentication.AppleAuthenticationButton
+          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+          cornerRadius={16}
+          style={styles.appleButton}
+          onPress={handleAppleLogin}
+        />
       </View>
 
       <View style={styles.logoContainer}>
@@ -101,8 +165,6 @@ export default function LoginScreen() {
     </View>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -202,5 +264,25 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#445E6B',
+  },
+  dividerText: {
+    color: '#B0BEC5',
+    paddingHorizontal: 10,
+    fontSize: 14,
+  },
+  appleButton: {
+    width: '100%',
+    height: 44,
+    marginTop: 8,
   },
 });

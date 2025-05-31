@@ -64,14 +64,23 @@ export default function ChatsScreen() {
 
   const loadUserAndChats = async () => {
     try {
-      const userId = await AsyncStorage.getItem('userId');
-      if (userId) {
-        setCurrentUserId(Number(userId));
-        fetchChats(Number(userId));
-      } else {
+      const storedUserId = await AsyncStorage.getItem('userId');
+      if (!storedUserId) {
         setIsLoading(false);
         router.replace('/login');
+        return;
       }
+  
+      const numericUserId = parseInt(storedUserId, 10);
+      if (isNaN(numericUserId) || numericUserId <= 0) {
+        console.warn('Invalid stored user ID:', storedUserId);
+        setIsLoading(false);
+        router.replace('/login');
+        return;
+      }
+  
+      setCurrentUserId(numericUserId);
+      fetchChats(numericUserId);
     } catch (err) {
       console.error('Error loading user:', err);
       setIsLoading(false);
@@ -81,16 +90,16 @@ export default function ChatsScreen() {
   const fetchChats = async (userId: number) => {
     try {
       const response = await axios.get(`${BACKEND_URL}/chats?user_id=${userId}`);
-      setChats(response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setChats(data);
     } catch (err) {
       console.error('Error fetching chats:', err);
-      Alert.alert('Error', 'Failed to load chats. Please try again.');
-    } finally {
+      Alert.alert('Error', 'Failed to load chats. Please check your connection.');
+      setChats([]); 
       setIsLoading(false);
       setRefreshing(false);
     }
   };
-
   const searchUserByEmail = async () => {
     if (!userEmail.trim()) {
       Alert.alert('Error', 'Please enter an email address');
@@ -107,7 +116,7 @@ export default function ChatsScreen() {
         return;
       }
 
-      const matchingUser = users.find(user => user.email.toLowerCase() === userEmail.toLowerCase());
+      const matchingUser = users.find((user: { email: string; }) => user.email.toLowerCase() === userEmail.toLowerCase());
       if (!matchingUser) {
         Alert.alert('Not Found', 'No user found with this email address');
         return;
@@ -118,7 +127,7 @@ export default function ChatsScreen() {
         return;
       }
 
-      // Create new chat
+  
       const chatResponse = await axios.post(`${BACKEND_URL}/chats`, {
         user_ids: [currentUserId, matchingUser.id]
       });
@@ -126,9 +135,9 @@ export default function ChatsScreen() {
       setNewChatModalVisible(false);
       setUserEmail('');
       
-      // Navigate to the new chat
+      
       router.push({
-        pathname: '/chat/[id]',
+        pathname: '/chats',
         params: { id: chatResponse.data.id }
       });
 
@@ -157,7 +166,7 @@ export default function ChatsScreen() {
     <TouchableOpacity
       style={styles.chatItem}
       onPress={() => router.push({
-        pathname: '/chat/[id]',
+        pathname: '/chats',
         params: { id: item.id }
       })}
     >

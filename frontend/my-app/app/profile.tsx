@@ -1,17 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, Alert, ScrollView, Image, Platform
+  View, Text, StyleSheet, Pressable, Alert, ScrollView,
+  Image, Platform, TextInput
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-
+import axios from 'axios';
+const BACKEND_URL = 'http://192.168.1.116:5002';
 export default function ProfileScreen() {
   const [userName, setUserName] = useState('User');
+  const [editing, setEditing] = useState(false);
+  const [newName, setNewName] = useState('');
 
   useEffect(() => {
     const getName = async () => {
       const name = await AsyncStorage.getItem('userName');
-      if (name) setUserName(name);
+      if (name) {
+        setUserName(name);
+        setNewName(name);
+      }
     };
     getName();
   }, []);
@@ -21,7 +28,37 @@ export default function ProfileScreen() {
     router.replace('/onboarding');
   };
 
-  const renderOption = (label: string, icon?: string) => (
+  const saveNewName = async () => {
+    if (!newName.trim()) {
+      Alert.alert('Error', 'Name cannot be empty');
+      return;
+    }
+  
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      console.log('🧠 userId:', userId); 
+  
+      if (!userId) {
+        Alert.alert('Error', 'User ID not found');
+        return;
+      }
+  
+      const response = await axios.put(`${BACKEND_URL}/users/${userId}`, {
+        name: newName.trim(),
+      });
+  
+      const updatedName = response.data.user.name;
+      await AsyncStorage.setItem('userName', updatedName);
+      setUserName(updatedName);
+      setEditing(false);
+      Alert.alert('Success', 'Name updated successfully!');
+    } catch (err) {
+      console.error('Error updating name:', err);
+      Alert.alert('Error', 'Failed to update name');
+    }
+  };
+
+  const renderOption = (label: string) => (
     <View style={styles.optionRow}>
       <Text style={styles.optionText}>{label}</Text>
     </View>
@@ -29,111 +66,110 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.avatarCircle}>
-        <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
-      </View>
+      <Image
+        source={require('@/assets/images/image.png')}
+        style={styles.profileImage}
+      />
+      
+      {editing ? (
+        <>
+          <TextInput
+            style={styles.nameInput}
+            value={newName}
+            onChangeText={setNewName}
+            placeholder="Enter your name"
+            placeholderTextColor="#888"
+          />
+          <Pressable style={styles.saveButton} onPress={saveNewName}>
+            <Text style={styles.saveButtonText}>Save</Text>
+          </Pressable>
+        </>
+      ) : (
+        <>
+          <Text style={styles.nameText}>{userName}</Text>
+          <Pressable onPress={() => setEditing(true)}>
+            <Text style={styles.editLink}>Edit Name</Text>
+          </Pressable>
+        </>
+      )}
 
-      <Text style={styles.name}>{userName}</Text>
-      <Text style={styles.subtext}>3.0 Self-Reported</Text>
-
-      <View style={styles.section}>
-        {renderOption('Profile')}
-        {renderOption('Rating')}
-        {renderOption('Location')}
-        {renderOption('Notifications')}
-        {renderOption('Payments')}
-        {renderOption('Get Help')}
-        {renderOption('More Settings')}
-      </View>
-
-      <View style={styles.section}>
-        <Pressable style={styles.grayButton}>
-          <Text style={styles.grayButtonText}>Privacy</Text>
-        </Pressable>
-        <Pressable style={styles.grayButton}>
-          <Text style={styles.grayButtonText}>Terms</Text>
-        </Pressable>
-        <Pressable style={styles.redButton} onPress={handleLogout}>
-          <Text style={styles.redButtonText}>Log out</Text>
-        </Pressable>
-      </View>
-
-      <Text style={styles.versionText}>Version 1.0.0 (Build 001)</Text>
+      {renderOption('Settings')}
+      {renderOption('Notifications')}
+      {renderOption('Privacy')}
+      
+      <Pressable style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Logout</Text>
+      </Pressable>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
-    paddingTop: Platform.OS === 'android' ? 60 : 100,
-    backgroundColor: '#fff',
     alignItems: 'center',
+    paddingTop: Platform.OS === 'android' ? 60 : 80,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    backgroundColor: '#002233',
+    flexGrow: 1,
   },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#9ACD32',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
+  profileImage: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
   },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
+  nameText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
-  name: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1976D2',
+  nameInput: {
+    fontSize: 20,
+    padding: 10,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    width: '80%',
+    textAlign: 'center',
+    marginBottom: 10,
   },
-  subtext: {
+  editLink: {
+    color: '#FFD700',
     fontSize: 14,
-    color: '#888',
-    marginBottom: 24,
+    marginTop: 8,
   },
-  section: {
-    width: '100%',
-    marginBottom: 24,
+  saveButton: {
+    backgroundColor: '#00AFAF',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
   optionRow: {
-    paddingVertical: 14,
+    width: '100%',
+    paddingVertical: 16,
+    borderBottomColor: '#445E6B',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    marginTop: 20,
   },
   optionText: {
-    fontSize: 16,
-    color: '#111',
+    fontSize: 18,
+    color: '#FFFFFF',
   },
-  grayButton: {
-    backgroundColor: '#ddd',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  grayButtonText: {
-    color: '#333',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  redButton: {
-    backgroundColor: '#FFCDD2',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  redButtonText: {
-    color: '#C62828',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  versionText: {
-    fontSize: 13,
-    color: '#aaa',
+  logoutButton: {
     marginTop: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    backgroundColor: '#FF4444',
+    borderRadius: 12,
+  },
+  logoutText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

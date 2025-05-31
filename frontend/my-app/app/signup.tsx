@@ -6,6 +6,9 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { signInWithApple } from '../utils/appleAuth'; 
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
@@ -39,6 +42,20 @@ export default function SignupScreen() {
     }
   };
 
+  const handleAppleSignup = async () => {
+    const result = await signInWithApple();
+    if (result) {
+      await AsyncStorage.setItem('isLoggedIn', 'true');
+      await AsyncStorage.setItem('userName', result.fullName?.givenName || 'Apple User');
+      await AsyncStorage.setItem('userRole', 'member'); // or inferred
+      await AsyncStorage.setItem('userId', result.user);
+
+      router.replace('/(tabs)');
+    } else {
+      Alert.alert('Signup Failed', 'Apple Sign-In was cancelled or failed.');
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -52,19 +69,24 @@ export default function SignupScreen() {
           <Text style={styles.back}>← Back</Text>
         </Pressable>
 
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/image.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.logoCaption}>powered by Teamigo</Text>
-        </View>
-
         <Text style={styles.title}>Create a Teamigo account</Text>
-        <Text style={styles.subtitle}>Let’s get you set up</Text>
+        <Text style={styles.subtitle}>Let's get you set up</Text>
 
         <View style={styles.form}>
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+            cornerRadius={16}
+            style={styles.appleButton}
+            onPress={handleAppleSignup}
+          />
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           <Text style={styles.label}>Name</Text>
           <TextInput
             placeholder="Your Name"
@@ -119,6 +141,16 @@ export default function SignupScreen() {
             <Text style={styles.signupText}>Sign Up</Text>
           </Pressable>
         </View>
+
+        {/* LOGO moved here to bottom */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('@/assets/images/image.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.logoCaption}>powered by Teamigo</Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -137,28 +169,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontSize: 16,
   },
-  logoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#092A3D',
-    borderRadius: 16,
-    marginBottom: 28,
-    shadowColor: '#00AFAF',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  logo: {
-    width: 140,
-    height: 50,
-  },
-  logoCaption: {
-    color: '#B0BEC5',
-    fontSize: 13,
-    marginTop: 8,
-  },
   title: {
     fontSize: 28,
     fontWeight: '800',
@@ -174,6 +184,26 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: 20,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#445E6B',
+  },
+  dividerText: {
+    color: '#B0BEC5',
+    paddingHorizontal: 10,
+    fontSize: 14,
+  },
+  appleButton: {
+    width: '100%',
+    height: 44,
+    marginTop: 8,
   },
   label: {
     marginTop: 10,
@@ -215,7 +245,7 @@ const styles = StyleSheet.create({
     color: '#B0BEC5',
   },
   roleTextSelected: {
-    color: '#zzz',
+    color: '#000000',
   },
   signupButton: {
     backgroundColor: '#00AFAF',
@@ -233,5 +263,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#092A3D',
+    borderRadius: 16,
+    marginTop: 28,
+    marginBottom: 20,
+    shadowColor: '#00AFAF',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  logo: {
+    width: 140,
+    height: 50,
+  },
+  logoCaption: {
+    color: '#B0BEC5',
+    fontSize: 13,
+    marginTop: 8,
   },
 });
