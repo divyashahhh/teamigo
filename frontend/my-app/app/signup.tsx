@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { API_URL } from '@env';import React, { useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet,
   Pressable, Alert, Platform, Image,
@@ -23,7 +23,7 @@ export default function SignupScreen() {
     }
 
     try {
-      const res = await fetch('http://192.168.1.116:5002/signup', {
+      const res = await fetch(`${API_URL}/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role }),

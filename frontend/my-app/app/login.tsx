@@ -1,3 +1,4 @@
+import { API_URL } from '@env';
 import React, { useState } from 'react';
 import {
   View,
@@ -15,7 +16,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { signInWithApple } from '../utils/appleAuth';
 import axios from 'axios';
 
-const BACKEND_URL = 'http://192.168.1.116:5002';
+const BACKEND_URL = API_URL;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
