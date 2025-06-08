@@ -14,13 +14,11 @@ import {
   Alert
 } from 'react-native';
 import { router } from 'expo-router';
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
-
-const BACKEND_URL = 'http://192.168.1.116:5002';
+import { chatApi, userApi } from '@/utils/api';
 
 interface Chat {
   id: number;
@@ -89,17 +87,25 @@ export default function ChatsScreen() {
 
   const fetchChats = async (userId: number) => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/chats?user_id=${userId}`);
-      const data = Array.isArray(response.data) ? response.data : [];
-      setChats(data);
+      const result = await chatApi.getChats(userId);
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      if (result.data) {
+        setChats(Array.isArray(result.data) ? result.data : []);
+      }
     } catch (err) {
       console.error('Error fetching chats:', err);
       Alert.alert('Error', 'Failed to load chats. Please check your connection.');
       setChats([]); 
+    } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
   };
+
   const searchUserByEmail = async () => {
     if (!userEmail.trim()) {
       Alert.alert('Error', 'Please enter an email address');
@@ -108,15 +114,22 @@ export default function ChatsScreen() {
 
     try {
       setIsCreatingChat(true);
-      const response = await axios.get(`${BACKEND_URL}/users/search?q=${userEmail.trim()}`);
-      const users = response.data;
+      const searchResult = await userApi.searchByEmail(userEmail.trim());
       
-      if (users.length === 0) {
+      if (searchResult.error) {
+        throw new Error(searchResult.error);
+      }
+      
+      if (!searchResult.data || searchResult.data.length === 0) {
         Alert.alert('Not Found', 'No user found with this email address');
         return;
       }
 
-      const matchingUser = users.find((user: { email: string; }) => user.email.toLowerCase() === userEmail.toLowerCase());
+      const users = searchResult.data;
+      const matchingUser = users.find((user: { email: string; }) => 
+        user.email.toLowerCase() === userEmail.toLowerCase()
+      );
+
       if (!matchingUser) {
         Alert.alert('Not Found', 'No user found with this email address');
         return;
@@ -127,20 +140,21 @@ export default function ChatsScreen() {
         return;
       }
 
-  
-      const chatResponse = await axios.post(`${BACKEND_URL}/chats`, {
-        user_ids: [currentUserId, matchingUser.id]
-      });
-
-      setNewChatModalVisible(false);
-      setUserEmail('');
+      const chatResult = await chatApi.createChat([currentUserId!, matchingUser.id]);
       
+      if (chatResult.error) {
+        throw new Error(chatResult.error);
+      }
       
-      router.push({
-        pathname: '/chats',
-        params: { id: chatResponse.data.id }
-      });
-
+      if (chatResult.data) {
+        setNewChatModalVisible(false);
+        setUserEmail('');
+        
+        router.push({
+          pathname: '/chats',
+          params: { id: chatResult.data.id }
+        });
+      }
     } catch (err) {
       console.error('Error creating chat:', err);
       Alert.alert('Error', 'Failed to create chat. Please try again.');

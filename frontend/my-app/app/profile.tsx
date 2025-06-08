@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import axios from 'axios';
-const BACKEND_URL = 'http://192.168.1.116:5002';
+import { userApi } from '@/utils/api';
+
 export default function ProfileScreen() {
   const [userName, setUserName] = useState('User');
   const [editing, setEditing] = useState(false);
@@ -43,15 +43,19 @@ export default function ProfileScreen() {
         return;
       }
   
-      const response = await axios.put(`${BACKEND_URL}/users/${userId}`, {
-        name: newName.trim(),
-      });
-  
-      const updatedName = response.data.user.name;
-      await AsyncStorage.setItem('userName', updatedName);
-      setUserName(updatedName);
-      setEditing(false);
-      Alert.alert('Success', 'Name updated successfully!');
+      const result = await userApi.updateName(userId, newName.trim());
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      if (result.data) {
+        const updatedName = result.data.user.name;
+        await AsyncStorage.setItem('userName', updatedName);
+        setUserName(updatedName);
+        setEditing(false);
+        Alert.alert('Success', 'Name updated successfully!');
+      }
     } catch (err) {
       console.error('Error updating name:', err);
       Alert.alert('Error', 'Failed to update name');

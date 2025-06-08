@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { signInWithApple } from '../utils/appleAuth';
-import axios from 'axios';
+import { authApi } from '@/utils/api';
 
 const BACKEND_URL = API_URL;
 
@@ -24,28 +24,24 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const result = await authApi.login(email, password);
+      
+      if (result.error) {
+        Alert.alert('Login Failed', result.error);
+        return;
+      }
 
-      if (res.ok) {
-        const data = await res.json();
-
+      if (result.data) {
         await AsyncStorage.setItem('isLoggedIn', 'true');
-        await AsyncStorage.setItem('userName', data.name);
-        await AsyncStorage.setItem('userRole', data.role);
-        await AsyncStorage.setItem('userId', data.id.toString());
+        await AsyncStorage.setItem('userName', result.data.name);
+        await AsyncStorage.setItem('userRole', result.data.role);
+        await AsyncStorage.setItem('userId', result.data.id.toString());
 
-        if (data.role === 'host') {
+        if (result.data.role === 'host') {
           router.replace('/host/setup' as never);
         } else {
           router.replace('/(tabs)');
         }
-      } else {
-        const data = await res.json();
-        Alert.alert('Login Failed', data.error || 'Invalid credentials');
       }
     } catch (err) {
       console.error(err);
@@ -70,30 +66,34 @@ export default function LoginScreen() {
       const generatedEmail = result.email || `${result.user}@privaterelay.appleid.com`;
 
       const payload = {
-      email: generatedEmail,
-      name: result.fullName?.givenName || 'Apple User',
-      apple_user_id: result.user,
+        email: generatedEmail,
+        name: result.fullName?.givenName || 'Apple User',
+        apple_user_id: result.user,
       };
   
       console.log('🔒 Apple Payload:', payload);
   
-      const response = await axios.post(`${BACKEND_URL}/apple-login`, payload);
-      const user = response.data;
-  
-  
-      await AsyncStorage.setItem('isLoggedIn', 'true');
-      await AsyncStorage.setItem('userId', user.id.toString());
-      await AsyncStorage.setItem('userName', user.name || 'Apple User');
-      await AsyncStorage.setItem('userRole', user.role || 'member');
-  
-      console.log('✅ Logged in as:', user.name, `(ID: ${user.id})`);
-  
-      if (user.role === 'host') {
-        router.replace('/host/setup' as never);
-      } else {
-        router.replace('/(tabs)');
+      const response = await authApi.appleLogin(payload);
+      
+      if (response.error) {
+        throw new Error(response.error);
       }
-  
+      
+      if (response.data) {
+        const user = response.data;
+        await AsyncStorage.setItem('isLoggedIn', 'true');
+        await AsyncStorage.setItem('userId', user.id.toString());
+        await AsyncStorage.setItem('userName', user.name || 'Apple User');
+        await AsyncStorage.setItem('userRole', user.role || 'member');
+    
+        console.log('✅ Logged in as:', user.name, `(ID: ${user.id})`);
+    
+        if (user.role === 'host') {
+          router.replace('/host/setup' as never);
+        } else {
+          router.replace('/(tabs)');
+        }
+      }
     } catch (err) {
       console.error('Apple login error:', err);
       Alert.alert('Apple Login Failed', 'Could not authenticate with Apple.');

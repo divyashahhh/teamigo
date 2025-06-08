@@ -61,6 +61,11 @@ def create_event():
         if not user_id or not date or not content:
             return jsonify({'error': 'Missing fields'}), 400
 
+        # Does user exist
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
         event = CalendarEvent(
             user_id=user_id,
             date=date,
@@ -79,6 +84,11 @@ def create_event():
 @cross_origin()
 def get_events(user_id):
     try:
+        # does user exist
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
         events = CalendarEvent.query.filter_by(user_id=user_id).all()
         return jsonify([event.to_dict() for event in events]), 200
     except Exception as e:
@@ -86,26 +96,47 @@ def get_events(user_id):
         return jsonify({'error': 'Server error'}), 500
 
 @auth_bp.route('/events/<int:event_id>', methods=['PUT'])
+@cross_origin()
 def update_event(event_id):
-    data = request.get_json()
-    event = CalendarEvent.query.get(event_id)
-    if not event:
-        return jsonify({'error': 'Event not found'}), 404
+    try:
+        data = request.get_json()
+        event = CalendarEvent.query.get(event_id)
+        
+        if not event:
+            return jsonify({'error': 'Event not found'}), 404
 
-    event.content = data.get('content', event.content)
-    event.color = data.get('color', event.color)
-    db.session.commit()
-    return jsonify({'message': 'Event updated', 'event': event.to_dict()}), 200
+        # Verify event ownership
+        user_id = data.get('user_id')
+        if user_id and event.user_id != user_id:
+            return jsonify({'error': 'Unauthorized to modify this event'}), 403
+
+        event.content = data.get('content', event.content)
+        event.color = data.get('color', event.color)
+        db.session.commit()
+        return jsonify({'message': 'Event updated', 'event': event.to_dict()}), 200
+    except Exception as e:
+        print("Update Event error:", e)
+        return jsonify({'error': 'Server error'}), 500
 
 @auth_bp.route('/events/<int:event_id>', methods=['DELETE'])
+@cross_origin()
 def delete_event(event_id):
-    event = CalendarEvent.query.get(event_id)
-    if not event:
-        return jsonify({'error': 'Event not found'}), 404
+    try:
+        event = CalendarEvent.query.get(event_id)
+        if not event:
+            return jsonify({'error': 'Event not found'}), 404
 
-    db.session.delete(event)
-    db.session.commit()
-    return jsonify({'message': 'Event deleted'}), 200
+        # Verify event ownership
+        user_id = request.args.get('user_id')
+        if user_id and int(user_id) != event.user_id:
+            return jsonify({'error': 'Unauthorized to delete this event'}), 403
+
+        db.session.delete(event)
+        db.session.commit()
+        return jsonify({'message': 'Event deleted'}), 200
+    except Exception as e:
+        print("Delete Event error:", e)
+        return jsonify({'error': 'Server error'}), 500
 
 @auth_bp.route('/users/search', methods=['GET'])
 @cross_origin()

@@ -10,11 +10,14 @@ import {
   ScrollView,
   Dimensions,
   Animated,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import axios from 'axios';
 import { BlurView } from 'expo-blur';
+import { eventApi } from '@/utils/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -50,27 +53,59 @@ const CalendarPage = () => {
   const [selectedColor, setSelectedColor] = useState(colorOptions[0].color);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [currentMonth, setCurrentMonth] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const userId = 1;
-  const BACKEND_URL = 'http://192.168.1.116:5002';
+  const [userId, setUserId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchEvents();
-    const date = new Date();
-    setCurrentMonth(date.toLocaleString('default', { month: 'long', year: 'numeric' }));
+    const initializeCalendar = async () => {
+      try {
+        const storedUserId = await AsyncStorage.getItem('userId');
+        if (!storedUserId) {
+          router.replace('/login');
+          return;
+        }
+
+        const numericUserId = parseInt(storedUserId, 10);
+        if (isNaN(numericUserId)) {
+          console.error('Invalid user ID stored');
+          router.replace('/login');
+          return;
+        }
+
+        setUserId(numericUserId);
+        await fetchEvents(numericUserId);
+        
+        const date = new Date();
+        setCurrentMonth(date.toLocaleString('default', { month: 'long', year: 'numeric' }));
+      } catch (error) {
+        console.error('Error initializing calendar:', error);
+        Alert.alert('Error', 'Failed to load calendar data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeCalendar();
   }, []);
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (currentUserId: number) => {
     try {
-      const res = await axios.get(`${BACKEND_URL}/events/${userId}`);
-      const grouped: Record<string, { id: number; text: string; color: string }[]> = {};
-      res.data.forEach((e: any) => {
-        if (!grouped[e.date]) grouped[e.date] = [];
-        grouped[e.date].push({ id: e.id, text: e.content, color: e.color });
-      });
-      setEventsByDate(grouped);
+      const result = await eventApi.getEvents(currentUserId);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      if (result.data) {
+        const grouped: Record<string, { id: number; text: string; color: string }[]> = {};
+        result.data.forEach((e: any) => {
+          if (!grouped[e.date]) grouped[e.date] = [];
+          grouped[e.date].push({ id: e.id, text: e.content, color: e.color });
+        });
+        setEventsByDate(grouped);
+      }
     } catch (err) {
       console.error('Error fetching events:', err);
+      Alert.alert('Error', 'Failed to load events');
     }
   };
 
@@ -79,34 +114,57 @@ const CalendarPage = () => {
   };
 
   const saveEvent = async () => {
-    if (!eventText.trim()) return;
+    if (!userId) {
+      Alert.alert('Error', 'Please log in again');
+      router.replace('/login');
+      return;
+    }
+
+    if (!eventText.trim()) {
+      Alert.alert('Error', 'Please enter event details');
+      return;
+    }
+
     try {
-      const res = await axios.post(`${BACKEND_URL}/events`, {
+      const result = await eventApi.createEvent({
         user_id: userId,
         date: selectedDate,
         content: eventText.trim(),
         color: selectedColor
       });
-      const newEvent = res.data.event;
-      const updated = { ...eventsByDate };
-      if (!updated[selectedDate]) updated[selectedDate] = [];
-      updated[selectedDate].push({ id: newEvent.id, text: newEvent.content, color: newEvent.color });
-      setEventsByDate(updated);
-      setEventText('');
-      setSelectedColor(colorOptions[0].color);
-      setModalVisible(false);
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      if (result.data) {
+        const newEvent = result.data.event;
+        const updated = { ...eventsByDate };
+        if (!updated[selectedDate]) updated[selectedDate] = [];
+        updated[selectedDate].push({ id: newEvent.id, text: newEvent.content, color: newEvent.color });
+        setEventsByDate(updated);
+        setEventText('');
+        setSelectedColor(colorOptions[0].color);
+        setModalVisible(false);
+      }
     } catch (err) {
       console.error('Error saving event:', err);
+      Alert.alert('Error', 'Failed to save event');
     }
   };
 
   const updateEvent = async () => {
     if (!selectedEventId || !selectedDate) return;
     try {
-      await axios.put(`${BACKEND_URL}/events/${selectedEventId}`, {
+      const result = await eventApi.updateEvent(selectedEventId, {
         content: eventText,
         color: selectedColor
       });
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
       const updated = { ...eventsByDate };
       updated[selectedDate] = updated[selectedDate].map(ev =>
         ev.id === selectedEventId ? { ...ev, text: eventText, color: selectedColor } : ev
@@ -121,7 +179,12 @@ const CalendarPage = () => {
   const deleteEvent = async () => {
     if (!selectedEventId || !selectedDate) return;
     try {
-      await axios.delete(`${BACKEND_URL}/events/${selectedEventId}`);
+      const result = await eventApi.deleteEvent(selectedEventId);
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
       const updated = { ...eventsByDate };
       updated[selectedDate] = updated[selectedDate].filter(ev => ev.id !== selectedEventId);
       setEventsByDate(updated);
