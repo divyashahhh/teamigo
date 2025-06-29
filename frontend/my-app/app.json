@@ -13,9 +13,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.divyashahhh.teamigo",
@@ -28,18 +26,15 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We need your location to show you nearby matches and events.",
         "NSLocationAlwaysUsageDescription": "We need your location to show you nearby matches and events.",
-        "UIBackgroundModes": [
-          "location",
-          "fetch"
-        ]
+        "UIBackgroundModes": ["location", "fetch"]
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      
+      }
+    },
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -61,9 +56,9 @@
     "extra": {
       "eas": {
         "projectId": "teamigo"
-      }
+      },
+      "BACKEND_URL": "https://teamigo-backend.onrender.com"
     },
     "originalFullName": "@divyashahhh/teamigo"
   }
-}
 }

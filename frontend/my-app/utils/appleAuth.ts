@@ -38,3 +38,13 @@ export async function signInWithApple() {
     return null;
   }
 }
+
+export const getUserRole = async (): Promise<string | null> => {
+  try {
+    const role = await AsyncStorage.getItem('userRole');
+    return role;
+  } catch (error) {
+    console.error('Error fetching user role:', error);
+    return null;
+  }
+};

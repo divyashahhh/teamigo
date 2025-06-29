@@ -1,4 +1,5 @@
 import { useColorScheme } from '@/assets/colorScheme';
+import { lightTheme, darkTheme } from '@/assets/colorScheme';
 
 export type ColorSchemeName = 'light' | 'dark';
 
