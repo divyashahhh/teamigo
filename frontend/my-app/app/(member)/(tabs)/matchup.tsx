@@ -107,94 +107,94 @@ export default function MatchupScreen() {
 
   return (
     <View style={styles.mainContainer}>
-      <View style={styles.container}>
-        {/* Top Tab Switcher */}
-        <View style={styles.tabRow}>
-          {['Invites', 'Map'].map(tab => (
-            <TouchableOpacity
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              style={[styles.tabButton, activeTab === tab && styles.activeTab]}
-            >
-              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+    <View style={styles.container}>
+      {/* Top Tab Switcher */}
+      <View style={styles.tabRow}>
+        {['Invites', 'Map'].map(tab => (
+          <TouchableOpacity
+            key={tab}
+            onPress={() => setActiveTab(tab)}
+            style={[styles.tabButton, activeTab === tab && styles.activeTab]}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              {tab}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-        {/* INVITES TAB */}
-        {activeTab === 'Invites' ? (
-          <ScrollView style={styles.scroll}>
-            {invites.map(invite => (
-              <View key={invite.id} style={styles.inviteCard}>
-                <Image source={invite.image} style={styles.cardBackground} />
-                <View style={styles.overlay}>
-                  <Text style={styles.title}>{invite.title}</Text>
-                  <View style={styles.locationContainer}>
-                    <Text style={styles.details}>
-                      {invite.location} • Hosted by {invite.host}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => openInMaps(invite)}
-                      style={styles.mapButton}
-                    >
-                      <Ionicons name="map-outline" size={20} color="#00b2a9" />
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={styles.time}>Time: {invite.time}</Text>
+      {/* INVITES TAB */}
+      {activeTab === 'Invites' ? (
+        <ScrollView style={styles.scroll}>
+          {invites.map(invite => (
+            <View key={invite.id} style={styles.inviteCard}>
+              <Image source={invite.image} style={styles.cardBackground} />
+              <View style={styles.overlay}>
+                <Text style={styles.title}>{invite.title}</Text>
+                <View style={styles.locationContainer}>
+                  <Text style={styles.details}>
+                    {invite.location} • Hosted by {invite.host}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => openInMaps(invite)}
+                    style={styles.mapButton}
+                  >
+                    <Ionicons name="map-outline" size={20} color="#00b2a9" />
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.chatButton}
-                  onPress={() => router.push('/chats')}
-                >
-                  <Image
-                    source={require('@/assets/icons/chat.png')}
-                    style={styles.chatIcon}
-                  />
-                </TouchableOpacity>
+                <Text style={styles.time}>Time: {invite.time}</Text>
               </View>
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => router.push('/chats')}
+              >
+                <Image
+                  source={require('@/assets/icons/chat.png')}
+                  style={styles.chatIcon}
+                />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+      ) : (
+        // MAP TAB
+        <View style={styles.mapTab}>
+          <MapView
+            style={styles.map}
+            showsUserLocation
+            showsPointsOfInterest
+            showsCompass
+            showsScale
+            showsBuildings
+            showsTraffic={false}
+            mapType="standard"
+            initialRegion={{
+              latitude: location?.coords.latitude || 1.3521, // Singapore coordinates as default
+              longitude: location?.coords.longitude || 103.8198,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+          >
+            {invites.map(invite => (
+              <Marker
+                key={invite.id}
+                coordinate={invite.coordinates}
+                title={invite.title}
+                description={invite.location}
+              >
+                <Callout onPress={() => openInMaps(invite)}>
+                  <View style={styles.callout}>
+                    <Text style={styles.calloutTitle}>{invite.title}</Text>
+                    <Text style={styles.calloutDetails}>{invite.location}</Text>
+                    <Text style={styles.calloutTime}>{invite.time}</Text>
+                    <Text style={styles.calloutLink}>Open in Maps →</Text>
+                  </View>
+                </Callout>
+              </Marker>
             ))}
-          </ScrollView>
-        ) : (
-          // MAP TAB
-          <View style={styles.mapTab}>
-            <MapView
-              style={styles.map}
-              showsUserLocation
-              showsPointsOfInterest
-              showsCompass
-              showsScale
-              showsBuildings
-              showsTraffic={false}
-              mapType="standard"
-              initialRegion={{
-                latitude: location?.coords.latitude || 1.3521, // Singapore coordinates as default
-                longitude: location?.coords.longitude || 103.8198,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
-              }}
-            >
-              {invites.map(invite => (
-                <Marker
-                  key={invite.id}
-                  coordinate={invite.coordinates}
-                  title={invite.title}
-                  description={invite.location}
-                >
-                  <Callout onPress={() => openInMaps(invite)}>
-                    <View style={styles.callout}>
-                      <Text style={styles.calloutTitle}>{invite.title}</Text>
-                      <Text style={styles.calloutDetails}>{invite.location}</Text>
-                      <Text style={styles.calloutTime}>{invite.time}</Text>
-                      <Text style={styles.calloutLink}>Open in Maps →</Text>
-                    </View>
-                  </Callout>
-                </Marker>
-              ))}
-            </MapView>
-          </View>
-        )}
+          </MapView>
+        </View>
+      )}
       </View>
     </View>
   );

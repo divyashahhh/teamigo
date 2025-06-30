@@ -58,7 +58,7 @@ export default function MemberMapsScreen() {
         latitudeDelta: 0.05,
         longitudeDelta: 0.05,
       });
-    }
+  }
   };
 
   return (
@@ -86,15 +86,15 @@ export default function MemberMapsScreen() {
           {filteredPortals
             .filter(portal => portal.location_lat && portal.location_lng)
             .map(portal => (
-              <Marker
+          <Marker
                 key={portal.id}
                 coordinate={{ latitude: portal.location_lat, longitude: portal.location_lng }}
                 title={portal.name}
                 description={portal.description}
                 onPress={() => setSelectedPortal(portal)}
-              />
+          />
             ))}
-        </MapView>
+      </MapView>
       )}
       {/* Portal details modal or card can go here if selectedPortal */}
     </View>

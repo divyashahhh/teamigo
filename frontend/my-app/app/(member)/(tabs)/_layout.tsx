@@ -3,8 +3,8 @@ import { Image } from 'react-native';
 
 export default function MemberTabsLayout() {
   return (
-    <Tabs 
-      screenOptions={{ 
+    <Tabs
+      screenOptions={{
         headerShown: false,
         tabBarStyle: {
           backgroundColor: '#fff',
@@ -31,7 +31,7 @@ export default function MemberTabsLayout() {
         },
       }}
     >
-      <Tabs.Screen 
+      <Tabs.Screen
         name="profile" 
         options={{
           title: 'Profile',
@@ -49,8 +49,8 @@ export default function MemberTabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen 
-        name="announcements" 
+      <Tabs.Screen
+        name="announcements"
         options={{
           title: 'Announcements',
           tabBarIcon: ({ color, focused }) => (
@@ -67,14 +67,14 @@ export default function MemberTabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen 
+      <Tabs.Screen
         name="calendar" 
-        options={{
+  options={{
           title: 'Calendar',
           tabBarIcon: ({ color, focused }) => (
             <Image
               source={require('@/assets/icons/calendar.png')}
-              style={{
+        style={{
                 width: 24,
                 height: 24,
                 opacity: focused ? 1 : 0.6,
@@ -90,20 +90,20 @@ export default function MemberTabsLayout() {
         options={{
           title: 'Chats',
           tabBarIcon: ({ color, focused }) => (
-            <Image
+        <Image
               source={require('@/assets/icons/chat.png')}
-              style={{
+          style={{
                 width: 24,
                 height: 24,
                 opacity: focused ? 1 : 0.6,
                 tintColor: color,
-              }}
+          }}
               resizeMode="contain"
             />
-          ),
-        }}
-      />
-      <Tabs.Screen 
+    ),
+  }}
+/>
+      <Tabs.Screen
         name="maps" 
         options={{
           title: 'Maps',
@@ -121,7 +121,7 @@ export default function MemberTabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen 
+      <Tabs.Screen
         name="matchup" 
         options={{
           title: 'Matchup',

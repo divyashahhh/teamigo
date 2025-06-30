@@ -72,7 +72,7 @@ export default function Index() {
             console.error('Profile fetch error:', profileError);
             // Default to member if profile not found
             console.log('No profile found, defaulting to member');
-            await router.push('../(member)/index');
+            await router.push('../(member)/(tabs)/index');
             return;
           }
 
@@ -82,10 +82,10 @@ export default function Index() {
           // Redirect based on role
           if (userRole === 'host') {
             console.log('Redirecting to host portal...');
-            await router.push('../(host)/portal');
+            await router.push('../(host)/(tabs)/portal');
           } else {
             console.log('Redirecting to member profile...');
-            await router.push('../(member)/profile');
+            await router.push('../(member)/(tabs)/profile');
           }
           console.log('Role-based redirect completed');
         } catch (redirectError) {
@@ -127,7 +127,7 @@ export default function Index() {
         }
       }
     };
-    
+
     // Add a timeout to ensure splash screen is hidden
     const timeout = setTimeout(async () => {
       try {

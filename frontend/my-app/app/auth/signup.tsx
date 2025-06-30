@@ -21,10 +21,10 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     if (!email || !password) {
       Alert.alert('Missing Info', 'Please fill in all fields');
-      return;
-    }
+    return;
+  }
 
-    try {
+  try {
       // Create the user in Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -54,11 +54,11 @@ export default function SignupScreen() {
             }
           ]
         );
-      }
-    } catch (error) {
+          }
+        } catch (error) {
       console.error('Signup error:', error);
       Alert.alert('Signup Failed', 'Something went wrong. Please try again.');
-    }
+      }
   };
 
   return (
@@ -161,7 +161,7 @@ export default function SignupScreen() {
             </Pressable>
           </View>
         </View>
-
+        
         <View style={styles.logoContainer}>
           <Image
             source={require('@/assets/images/image.png')}

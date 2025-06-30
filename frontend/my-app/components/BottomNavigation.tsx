@@ -16,19 +16,21 @@ interface BottomNavigationProps {
 
 export default function BottomNavigation({ userRole, currentTab = 'home' }: BottomNavigationProps) {
   const memberTabs: TabItem[] = [
-    { id: 'home', label: 'Profile', icon: require('@/assets/icons/homee.png'), route: '../(member)/profile' },
+    { id: 'home', label: 'Home', icon: require('@/assets/icons/homee.png'), route: '../(member)/(tabs)/index' },
     { id: 'announcements', label: 'Announcements', icon: require('@/assets/icons/megaphone.png'), route: '../(member)/(tabs)/announcements' },
     { id: 'calendar', label: 'Calendar', icon: require('@/assets/icons/calendar.png'), route: '../(member)/(tabs)/calendar' },
     { id: 'chats', label: 'Chats', icon: require('@/assets/icons/chat.png'), route: '../(member)/(tabs)/chats' },
     { id: 'maps', label: 'Maps', icon: require('@/assets/icons/user.png'), route: '../(member)/(tabs)/maps' },
     { id: 'matchup', label: 'Matchup', icon: require('@/assets/icons/3d-cube.png'), route: '../(member)/(tabs)/matchup' },
+    { id: 'profile', label: 'Profile', icon: require('@/assets/icons/user.png'), route: '../(member)/(tabs)/profile' },
   ];
 
   const hostTabs: TabItem[] = [
-    { id: 'home', label: 'Portal', icon: require('@/assets/icons/homee.png'), route: '../(host)/portal' },
+    { id: 'home', label: 'Home', icon: require('@/assets/icons/homee.png'), route: '../(host)/(tabs)/index' },
     { id: 'announcements', label: 'Announcements', icon: require('@/assets/icons/megaphone.png'), route: '../(host)/(tabs)/announcements' },
     { id: 'calendar', label: 'Calendar', icon: require('@/assets/icons/calendar.png'), route: '../(host)/(tabs)/calendar' },
     { id: 'chats', label: 'Chats', icon: require('@/assets/icons/chat.png'), route: '../(host)/(tabs)/chats' },
+    { id: 'portal', label: 'Portal', icon: require('@/assets/icons/homee.png'), route: '../(host)/(tabs)/portal' },
   ];
 
   const tabs = userRole === 'host' ? hostTabs : memberTabs;

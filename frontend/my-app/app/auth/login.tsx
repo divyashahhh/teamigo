@@ -26,8 +26,8 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Missing Info', 'Please fill in all fields');
-      return;
-    }
+        return;
+      }
 
     try {
       // Sign in with Supabase Auth
@@ -35,12 +35,12 @@ export default function LoginScreen() {
         email,
         password,
       });
-
+  
       if (authError) {
         Alert.alert('Login Failed', authError.message);
         return;
       }
-
+  
       if (authData.user) {
         // Fetch user role from profiles table
         const { data: profileData, error: profileError } = await supabase
@@ -48,7 +48,7 @@ export default function LoginScreen() {
           .select('role')
           .eq('id', authData.user.id)
           .single();
-
+      
         if (profileError) {
           console.error('Profile fetch error:', profileError);
           Alert.alert('Error', 'Could not retrieve user profile. Please try again.');
@@ -62,9 +62,9 @@ export default function LoginScreen() {
 
         // Redirect based on role
         if (userRole === 'host') {
-          router.push('../(host)/portal');
+          router.push('../(host)/(tabs)/portal');
         } else {
-          router.push('../(member)/profile');
+          router.push('../(member)/(tabs)/profile');
         }
       }
     } catch (error) {
@@ -113,7 +113,7 @@ export default function LoginScreen() {
           <Text style={styles.signupText}>Don't have an account? </Text>
           <Pressable onPress={() => router.push('./signup')}>
             <Text style={styles.signupLink}>Sign Up</Text>
-          </Pressable>
+        </Pressable>
         </View>
       </View>
 

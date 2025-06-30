@@ -28,39 +28,39 @@ export default function AnnouncementsScreen() {
 
   return (
     <View style={styles.mainContainer}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Top Tab Switcher */}
-        <View style={styles.tabRow}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              style={[styles.tabButton, activeTab === tab && styles.activeTab]}
-            >
-              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Filter Buttons */}
-        <View style={styles.filterRow}>
-          {renderFilter('Show', filter1, setFilter1, filter1Options)}
-          {renderFilter('Sort', filter2, setFilter2, filter2Options)}
-        </View>
-
-        {/* Announcement Cards */}
-        {[1, 2, 3].map(i => (
-          <View key={i} style={styles.card}>
-            <Text style={styles.cardTitle}>📢 Announcement Title {i}</Text>
-            <Text style={styles.cardBody}>Details about your announcement go here. You can customize this card per post.</Text>
-            <TouchableOpacity style={styles.viewMoreBtn}>
-              <Text style={styles.viewMoreText}>View More</Text>
-            </TouchableOpacity>
-          </View>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
+      {/* Top Tab Switcher */}
+      <View style={styles.tabRow}>
+        {tabs.map(tab => (
+          <TouchableOpacity
+            key={tab}
+            onPress={() => setActiveTab(tab)}
+            style={[styles.tabButton, activeTab === tab && styles.activeTab]}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              {tab}
+            </Text>
+          </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
+
+      {/* Filter Buttons */}
+      <View style={styles.filterRow}>
+        {renderFilter('Show', filter1, setFilter1, filter1Options)}
+        {renderFilter('Sort', filter2, setFilter2, filter2Options)}
+      </View>
+
+      {/* Announcement Cards */}
+      {[1, 2, 3].map(i => (
+        <View key={i} style={styles.card}>
+          <Text style={styles.cardTitle}>📢 Announcement Title {i}</Text>
+          <Text style={styles.cardBody}>Details about your announcement go here. You can customize this card per post.</Text>
+          <TouchableOpacity style={styles.viewMoreBtn}>
+            <Text style={styles.viewMoreText}>View More</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+    </ScrollView>
     </View>
   );
 }

@@ -41,7 +41,7 @@ export default function HomeTab() {
               style={styles.topIcon}
             />
           </Pressable>
-          <Pressable onPress={() => router.push('/profile')}>
+          <Pressable onPress={() => router.push('../(member)/(tabs)/profile')}>
             <Image
               source={require('@/assets/icons/user.png')}
               style={styles.topIcon}
