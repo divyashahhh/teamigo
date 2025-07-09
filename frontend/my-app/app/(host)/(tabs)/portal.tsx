@@ -5,9 +5,8 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
-import BottomNavigation from '@/components/BottomNavigation';
 import * as ImagePicker from 'expo-image-picker';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Region, MapPressEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
@@ -28,7 +27,7 @@ export default function PortalScreen() {
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
-  const [mapRegion, setMapRegion] = useState(null);
+  const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
 
   useEffect(() => {
@@ -294,7 +293,7 @@ export default function PortalScreen() {
     }
   };
 
-  const selectLocation = (e) => {
+  const selectLocation = (e: MapPressEvent) => {
     const { latitude, longitude } = e.nativeEvent.coordinate;
     setLocation({ lat: latitude, lng: longitude, address: '' });
     setMapRegion({
@@ -329,6 +328,12 @@ export default function PortalScreen() {
 
   return (
     <View style={styles.mainContainer}>
+      {/* Header with Chats button */}
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', padding: 16 }}>
+        <Pressable onPress={() => router.push('/chats')} style={{ padding: 8 }}>
+          <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
+        </Pressable>
+      </View>
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

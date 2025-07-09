@@ -1,137 +1,162 @@
-/*import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { Tabs } from 'expo-router';
+import { Image, View, StyleSheet, Animated, Easing } from 'react-native';
+import { useEffect, useRef } from 'react';
 
-import { useColorScheme } from '@/assets/colorScheme';
+const icons = {
+  portal: require('@/assets/icons/homee.png'),
+  announce: require('@/assets/icons/megaphone.png'),
+  matchup: require('@/assets/icons/high-five.png'),
+  merch: require('@/assets/icons/shopping-bag.png'),
+  calendar: require('@/assets/icons/calendar.png'),
+};
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  /*const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+function TabIcon({ focused, source, isCenter = false }: { focused: boolean; source: any; isCenter?: boolean }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
+  useEffect(() => {
+    Animated.timing(scaleAnim, {
+      toValue: focused ? 1.2 : 1,
+      duration: 250,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: true,
+    }).start();
+  }, [focused]);
+
+  const tintColor = isCenter ? '#1AB09E' : focused ? '#fff' : '#888';
+  const containerStyle = [
+    styles.iconWrapper,
+    isCenter && styles.centerIconWrapper,
+    focused && isCenter && styles.centerIconFocused,
+  ];
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-    </ThemeProvider>
+    <Animated.View style={[containerStyle, { transform: [{ scale: scaleAnim }] }]}> 
+      <Image source={source} style={[styles.icon, { tintColor }]} />
+    </Animated.View>
   );
-}*/
-import { Tabs } from 'expo-router';
-import { Image } from 'react-native';
+}
 
 export default function HostTabsLayout() {
   return (
-    <Tabs 
-      screenOptions={{ 
+    <Tabs
+      screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 5,
-          paddingBottom: 20,
-          paddingTop: 8,
-          height: 80,
-        },
-        tabBarActiveTintColor: '#00b2a9',
-        tabBarInactiveTintColor: '#666',
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '500',
-        },
-        tabBarItemStyle: {
-          paddingVertical: 8,
-          paddingHorizontal: 12,
-        },
+        tabBarShowLabel: false,
+        tabBarStyle: styles.tabBar,
       }}
     >
-      <Tabs.Screen 
-        name="portal" 
+      <Tabs.Screen
+        name="portal"
         options={{
-          title: 'Portal',
-          tabBarIcon: ({ color, focused }) => (
-            <Image
-              source={require('@/assets/icons/homee.png')}
-              style={{
-                width: 24,
-                height: 24,
-                opacity: focused ? 1 : 0.6,
-                tintColor: color,
-              }}
-              resizeMode="contain"
-            />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} source={icons.portal} isCenter={undefined} />
           ),
         }}
       />
-      <Tabs.Screen 
-        name="announcements" 
+      <Tabs.Screen
+        name="announcements"
         options={{
-          title: 'Announcements',
-          tabBarIcon: ({ color, focused }) => (
-            <Image
-              source={require('@/assets/icons/megaphone.png')}
-              style={{
-                width: 24,
-                height: 24,
-                opacity: focused ? 1 : 0.6,
-                tintColor: color,
-              }}
-              resizeMode="contain"
-            />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} source={icons.announce} isCenter={undefined} />
           ),
         }}
       />
-      <Tabs.Screen 
-        name="calendar" 
+      <Tabs.Screen
+        name="matchup"
         options={{
-          title: 'Calendar',
-          tabBarIcon: ({ color, focused }) => (
-            <Image
-              source={require('@/assets/icons/calendar.png')}
+          tabBarIcon: ({ focused }) => (
+            <Animated.View
               style={{
-                width: 24,
-                height: 24,
-                opacity: focused ? 1 : 0.6,
-                tintColor: color,
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: '#1C2A67',
+                transform: [{ scale: focused ? 1.1 : 1 }],
+                top: -10,
+                elevation: 5,
+                shadowColor: '#000',
+                shadowOpacity: 0.2,
+                shadowOffset: { width: 0, height: 2 },
+                shadowRadius: 6,
               }}
-              resizeMode="contain"
-            />
+            >
+              <Image
+                source={icons.matchup}
+                style={{
+                  width: 28,
+                  height: 28,
+                  tintColor: '#2BB3B1',
+                }}
+              />
+            </Animated.View>
           ),
         }}
       />
-      <Tabs.Screen 
-        name="chats" 
+      <Tabs.Screen
+        name="merch"
         options={{
-          title: 'Chats',
-          tabBarIcon: ({ color, focused }) => (
-            <Image
-              source={require('@/assets/icons/chat.png')}
-              style={{
-                width: 24,
-                height: 24,
-                opacity: focused ? 1 : 0.6,
-                tintColor: color,
-              }}
-              resizeMode="contain"
-            />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} source={icons.merch} isCenter={undefined} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} source={icons.calendar} isCenter={undefined} />
           ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    position: 'absolute',
+    backgroundColor: '#111',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    height: 80,
+    paddingBottom: 14,
+    paddingTop: 8,
+    borderTopWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  iconWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 56,
+    height: 56,
+  },
+  centerIconWrapper: {
+    width: 68,
+    height: 68,
+    backgroundColor: '#fff',
+    borderRadius: 34,
+    marginTop: -30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerIconFocused: {
+    shadowColor: '#1AB09E',
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 12,
+  },
+  icon: {
+    width: 26,
+    height: 26,
+    resizeMode: 'contain',
+  },
+});

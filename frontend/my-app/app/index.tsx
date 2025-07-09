@@ -82,10 +82,10 @@ export default function Index() {
           // Redirect based on role
           if (userRole === 'host') {
             console.log('Redirecting to host portal...');
-            await router.push('../(host)/(tabs)/portal');
+            await router.push('/(host)/(tabs)/portal');
           } else {
             console.log('Redirecting to member profile...');
-            await router.push('../(member)/(tabs)/profile');
+            await router.push('/(member)/(tabs)/profile');
           }
           console.log('Role-based redirect completed');
         } catch (redirectError) {

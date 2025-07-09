@@ -6,6 +6,7 @@ import {
 import { router } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,7 @@ export default function ProfileScreen() {
         return;
       }
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('id', user.id)
         .single();
@@ -105,7 +106,7 @@ export default function ProfileScreen() {
         .getPublicUrl(fileName);
       setProfileImageUrl(urlData.publicUrl);
       await supabase
-        .from('profiles')
+        .from('users')
         .update({ 
           profile_image_url: urlData.publicUrl,
           updated_at: new Date().toISOString()
@@ -132,7 +133,7 @@ export default function ProfileScreen() {
         return;
       }
       await supabase
-        .from('profiles')
+        .from('users')
         .update({ 
           name: tempName.trim(),
           description: tempDescription.trim(),
@@ -167,6 +168,12 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.mainContainer}>
+      {/* Header with Chats button */}
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', padding: 16 }}>
+        <Pressable onPress={() => router.push('/chats')} style={{ padding: 8 }}>
+          <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
+        </Pressable>
+      </View>
       <View style={styles.container}>
         {/* Profile Image */}
         <Pressable style={styles.circularFrame} onPress={pickImage}>

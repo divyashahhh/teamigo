@@ -17,6 +17,7 @@ import { Calendar } from 'react-native-calendars';
 import { BlurView } from 'expo-blur';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import { supabase } from '@/utils/supabaseClient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -54,27 +55,21 @@ const CalendarPage = () => {
   const [currentMonth, setCurrentMonth] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [userId, setUserId] = useState<number | null>(null);
+  // Change userId state to string
+  const [userId, setUserId] = useState<string | null>(null);
+  // State for events
+  const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
     const initializeCalendar = async () => {
       try {
-        const storedUserId = await AsyncStorage.getItem('userId');
-        if (!storedUserId) {
-          router.replace('/login');
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) {
+          Alert.alert('Error', 'Could not fetch user data');
           return;
         }
-
-        const numericUserId = parseInt(storedUserId, 10);
-        if (isNaN(numericUserId)) {
-          console.error('Invalid user ID stored');
-          router.replace('/login');
-          return;
-        }
-
-        setUserId(numericUserId);
-        await fetchEvents(numericUserId);
-        
+        setUserId(user.id);
+        await fetchEvents(user.id);
         const date = new Date();
         setCurrentMonth(date.toLocaleString('default', { month: 'long', year: 'numeric' }));
       } catch (error) {
@@ -84,27 +79,63 @@ const CalendarPage = () => {
         setIsLoading(false);
       }
     };
-
     initializeCalendar();
   }, []);
 
-  const fetchEvents = async (currentUserId: number) => {
-    try {
-      const result = await eventApi.getEvents(currentUserId);
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      if (result.data) {
-        const grouped: Record<string, { id: number; text: string; color: string }[]> = {};
-        result.data.forEach((e: any) => {
-          if (!grouped[e.date]) grouped[e.date] = [];
-          grouped[e.date].push({ id: e.id, text: e.content, color: e.color });
-        });
-        setEventsByDate(grouped);
-      }
-    } catch (err) {
-      console.error('Error fetching events:', err);
-      Alert.alert('Error', 'Failed to load events');
+  // Fetch events
+  const fetchEvents = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: true });
+    if (error) {
+      console.error('Error fetching events:', error);
+      setEvents([]);
+    } else {
+      setEvents(data || []);
+    }
+  };
+
+  // Create event
+  const createEvent = async (event: any) => {
+    const { data, error } = await supabase
+      .from('events')
+      .insert([event])
+      .select()
+      .single();
+    if (error) {
+      Alert.alert('Error', 'Failed to create event');
+    } else {
+      fetchEvents(event.user_id);
+    }
+  };
+
+  // Update event
+  const updateEvent = async (eventId: string, updates: any) => {
+    const { data, error } = await supabase
+      .from('events')
+      .update(updates)
+      .eq('id', eventId)
+      .select()
+      .single();
+    if (error) {
+      Alert.alert('Error', 'Failed to update event');
+    } else {
+      fetchEvents(updates.user_id);
+    }
+  };
+
+  // Delete event
+  const deleteEvent = async (eventId: string, userId: string) => {
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', eventId);
+    if (error) {
+      Alert.alert('Error', 'Failed to delete event');
+    } else {
+      fetchEvents(userId);
     }
   };
 
@@ -125,19 +156,23 @@ const CalendarPage = () => {
     }
 
     try {
-      const result = await eventApi.createEvent({
-        user_id: userId,
-        date: selectedDate,
-        content: eventText.trim(),
-        color: selectedColor
-      });
+      const result = await supabase
+        .from('events')
+        .insert([{
+          user_id: userId,
+          date: selectedDate,
+          content: eventText.trim(),
+          color: selectedColor
+        }])
+        .select()
+        .single();
       
       if (result.error) {
-        throw new Error(result.error);
+        throw new Error(result.error.message);
       }
       
       if (result.data) {
-        const newEvent = result.data.event;
+        const newEvent = result.data;
         const updated = { ...eventsByDate };
         if (!updated[selectedDate]) updated[selectedDate] = [];
         updated[selectedDate].push({ id: newEvent.id, text: newEvent.content, color: newEvent.color });
@@ -149,47 +184,6 @@ const CalendarPage = () => {
     } catch (err) {
       console.error('Error saving event:', err);
       Alert.alert('Error', 'Failed to save event');
-    }
-  };
-
-  const updateEvent = async () => {
-    if (!selectedEventId || !selectedDate) return;
-    try {
-      const result = await eventApi.updateEvent(selectedEventId, {
-        content: eventText,
-        color: selectedColor
-      });
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      
-      const updated = { ...eventsByDate };
-      updated[selectedDate] = updated[selectedDate].map(ev =>
-        ev.id === selectedEventId ? { ...ev, text: eventText, color: selectedColor } : ev
-      );
-      setEventsByDate(updated);
-      setEditModalVisible(false);
-    } catch (err) {
-      console.error('Error updating event:', err);
-    }
-  };
-
-  const deleteEvent = async () => {
-    if (!selectedEventId || !selectedDate) return;
-    try {
-      const result = await eventApi.deleteEvent(selectedEventId);
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      
-      const updated = { ...eventsByDate };
-      updated[selectedDate] = updated[selectedDate].filter(ev => ev.id !== selectedEventId);
-      setEventsByDate(updated);
-      setEditModalVisible(false);
-    } catch (err) {
-      console.error('Error deleting event:', err);
     }
   };
 
@@ -400,13 +394,16 @@ const CalendarPage = () => {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.deleteButton]}
-                onPress={deleteEvent}
+                onPress={() => deleteEvent(selectedEventId?.toString() || '', userId || '')}
               >
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
-                onPress={updateEvent}
+                onPress={() => updateEvent(selectedEventId?.toString() || '', {
+                  content: eventText,
+                  color: selectedColor
+                })}
               >
                 <Text style={styles.saveButtonText}>Update</Text>
               </TouchableOpacity>

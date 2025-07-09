@@ -13,8 +13,6 @@ import {
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { signInWithApple } from '../../utils/appleAuth';
-import { authApi } from '@/utils/api';
 import { useEffect} from 'react';
 import { supabase } from '@/utils/supabaseClient';
 

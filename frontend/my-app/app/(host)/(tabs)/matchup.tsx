@@ -321,7 +321,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
   },
-});
-
-
-
+}); 
