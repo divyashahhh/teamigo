@@ -10,10 +10,10 @@ export default function MapsScreen() {
       <MapView
         style={styles.map}
         initialRegion={{
-          latitude: 20.5937, // Center of India
-          longitude: 78.9629,
-          latitudeDelta: 10,
-          longitudeDelta: 10,
+          latitude: 1.3521, // Center of Singapore
+          longitude: 103.8198,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
         }}
         showsUserLocation
         showsMyLocationButton

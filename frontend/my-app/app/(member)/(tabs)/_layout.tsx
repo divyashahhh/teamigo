@@ -3,9 +3,9 @@ import { Image, View, StyleSheet, Animated, Easing } from 'react-native';
 import { useEffect, useRef } from 'react';
 
 const icons = {
-  home: require('@/assets/icons/homee.png'),
+  portal: require('@/assets/icons/homee.png'),
   announce: require('@/assets/icons/megaphone.png'),
-  matchup: require('@/assets/icons/high-five.png'),
+  maps: require('@/assets/icons/high-five.png'), // renamed from matchup
   merch: require('@/assets/icons/shopping-bag.png'),
   calendar: require('@/assets/icons/calendar.png'),
 };
@@ -49,7 +49,7 @@ export default function MemberTabsLayout() {
         name="profile"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} source={icons.home} isCenter={undefined} />
+            <TabIcon focused={focused} source={icons.portal} isCenter={undefined} />
           ),
         }}
       />
@@ -62,7 +62,7 @@ export default function MemberTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="matchup"
+        name="maps" // renamed from "matchup"
         options={{
           tabBarIcon: ({ focused }) => (
             <Animated.View
@@ -83,7 +83,7 @@ export default function MemberTabsLayout() {
               }}
             >
               <Image
-                source={icons.matchup}
+                source={icons.maps} // renamed from icons.matchup
                 style={{
                   width: 28,
                   height: 28,
