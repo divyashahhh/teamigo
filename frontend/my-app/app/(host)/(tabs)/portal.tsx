@@ -8,6 +8,7 @@ import { supabase } from '@/utils/supabaseClient';
 import * as ImagePicker from 'expo-image-picker';
 import MapView, { Marker, Region, MapPressEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
+import * as FileSystem from 'expo-file-system';
 
 const { width } = Dimensions.get('window');
 
@@ -15,8 +16,8 @@ export default function PortalScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
-  const [name, setName] = useState('Name');
-  const [description, setDescription] = useState('Description');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -29,6 +30,7 @@ export default function PortalScreen() {
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [role, setRole] = useState('member');
 
   useEffect(() => {
     fetchUserProfile();
@@ -55,7 +57,7 @@ export default function PortalScreen() {
 
       // Fetch user profile from profiles table
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('id', user.id)
         .single();
@@ -67,8 +69,8 @@ export default function PortalScreen() {
       }
 
       // Set profile data
-      setName(profileData.name || 'Name');
-      setDescription(profileData.description || 'Description');
+      setName(profileData.name || '');
+      setDescription(profileData.description || '');
       setProfileImageUrl(profileData.profile_image_url);
       setSubscriberCount(profileData.subscriber_count || 0);
       setTags(profileData.tags || []);
@@ -77,6 +79,8 @@ export default function PortalScreen() {
           ? { lat: profileData.location_lat, lng: profileData.location_lng, address: profileData.location_address || '' }
           : null
       );
+      setRole(profileData.role || 'member');
+      console.log('Fetched profileImageUrl:', profileData.profile_image_url);
       
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
@@ -135,45 +139,40 @@ export default function PortalScreen() {
   const uploadImage = async (uri: string) => {
     try {
       setSaving(true);
-      // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         Alert.alert('Error', 'User not found');
         return;
       }
-      // Convert image to blob
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      // Upload to Supabase Storage (portal-images bucket)
-      const fileName = `portal-${user.id}-${Date.now()}.jpg`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('portal-images')
-        .upload(fileName, blob, { upsert: true });
+      const fileName = `host-profile-pics/${user.id}-${Date.now()}.jpg`;
+      // Read file as base64
+      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+      const fileBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const { error: uploadError } = await supabase.storage
+        .from('profile-images')
+        .upload(fileName, fileBytes, { contentType: 'image/jpeg', upsert: true });
       if (uploadError) {
         console.error('Upload error:', uploadError);
         Alert.alert('Error', 'Failed to upload image');
         return;
       }
-      // Get public URL
       const { data: urlData } = supabase.storage
-        .from('portal-images')
+        .from('profile-images')
         .getPublicUrl(fileName);
-      console.log('Portal image URL:', urlData.publicUrl);
-      // Update profile with new portal image URL
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from('users')
         .update({ 
-          portal_image_url: urlData.publicUrl,
+          profile_image_url: urlData.publicUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
       if (updateError) {
         console.error('Update error:', updateError);
-        Alert.alert('Error', 'Failed to update portal image');
+        Alert.alert('Error', 'Failed to update profile image');
         return;
       }
       setProfileImageUrl(urlData.publicUrl);
-      Alert.alert('Success', 'Portal image updated!');
+      Alert.alert('Success', 'Profile image updated!');
     } catch (error) {
       console.error('Error uploading image:', error);
       Alert.alert('Error', 'Failed to upload image');
@@ -200,7 +199,7 @@ export default function PortalScreen() {
 
       // Update profile
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from('users')
         .update({ 
           name: tempName.trim(),
           description: tempDescription.trim(),
@@ -260,7 +259,7 @@ export default function PortalScreen() {
       setSaving(false);
       return;
     }
-    const { data, error } = await supabase.from('profiles').update({
+    const { data, error } = await supabase.from('users').update({
       tags,
       location_lat: location?.lat,
       location_lng: location?.lng,
@@ -342,13 +341,16 @@ export default function PortalScreen() {
         {/* Header Section */}
         <View style={styles.headerSection}>
           {/* Profile Image */}
-          <Pressable style={styles.circularFrame} onPress={pickImage}>
+          <Pressable style={[styles.circularFrame, { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }]} onPress={pickImage}>
             {profileImageUrl ? (
-              <Image source={{ uri: profileImageUrl }} style={styles.profileImage} resizeMode="cover" />
+              <Image source={{ uri: profileImageUrl }} style={[styles.profileImage, { width: 120, height: 120, borderRadius: 60 }]} resizeMode="cover" />
             ) : (
               <Text style={styles.addImageText}>+</Text>
             )}
           </Pressable>
+          {profileImageUrl && (
+            <Text style={{ fontSize: 10, color: 'gray', marginTop: 4 }}>{profileImageUrl}</Text>
+          )}
 
           {/* Profile Info */}
           <View style={styles.profileInfo}>
