@@ -1,86 +1,115 @@
-import { API_URL } from '@env';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  Pressable,
-  Alert,
-  Platform,
-  Image,
+  View, Text, TextInput, StyleSheet,
+  Pressable, Alert, Image,
+  KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import { useEffect} from 'react';
 import { supabase } from '@/utils/supabaseClient';
 
-
-export default function LoginScreen() {
+export default function LoginScreen(): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Missing Info', 'Please fill in all fields');
-        return;
-      }
+      return;
+    }
 
     try {
-      // Sign in with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-  
-      if (authError) {
-        Alert.alert('Login Failed', authError.message);
+
+      if (loginError) {
+        console.error('Login error:', loginError);
+        Alert.alert('Login Failed', loginError.message);
         return;
       }
-  
-      if (authData.user) {
-        // Fetch user role from profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', authData.user.id)
-          .single();
-      
-        if (profileError) {
-          console.error('Profile fetch error:', profileError);
-          Alert.alert('Error', 'Could not retrieve user profile. Please try again.');
+
+      const user = authData.user;
+      if (!user) {
+        Alert.alert('Login Failed', 'No user returned from Supabase.');
+        return;
+      }
+
+      if (!user.email_confirmed_at) {
+        Alert.alert(
+          'Email Not Verified',
+          'Please check your email and click the verification link before logging in.'
+        );
+        return;
+      }
+
+      // Sync email_verified in public.users if verified
+      await supabase
+        .from('users')
+        .update({ email_verified: true })
+        .eq('id', user.id);
+
+      const { data: existingUser, error: userCheckError } = await supabase
+        .from('users')
+        .select('id, role')
+        .eq('id', user.id)
+        .single();
+
+      if (userCheckError && userCheckError.code !== 'PGRST116') {
+        console.error('Error checking users table:', userCheckError);
+        Alert.alert('Login Failed', 'Could not check user role.');
+        return;
+      }
+
+      // If user does not exist in public.users, insert
+      if (!existingUser) {
+        const insertRole = user.user_metadata?.role || 'member';
+
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email,
+            role: insertRole,
+            email_verified: true,
+          });
+
+        if (insertError) {
+          console.error('Error inserting new user into users table:', insertError);
+          Alert.alert('Login Failed', 'Failed to create user record.');
           return;
         }
-
-        const userRole = profileData?.role || 'member'; // Default to member if no role found
-
-        console.log('Login successful, user role:', userRole);
-        Alert.alert('Login Successful', `Welcome back! Redirecting to ${userRole} dashboard.`);
-
-        // Redirect based on role
-        if (userRole === 'host') {
-          router.push('../(host)/(tabs)/portal');
-        } else {
-          router.push('../(member)/(tabs)/profile');
-        }
       }
+
+      // Save role to local storage
+      const finalRole = existingUser?.role || user.user_metadata?.role || 'member';
+      await AsyncStorage.setItem('userRole', finalRole);
+
+      Alert.alert('Login Successful', `Welcome back, ${finalRole}!`);
+
+      // Navigate based on role
+      if (finalRole === 'host') {
+        router.replace('/portal');
+      } else {
+        router.replace('/profile');
+      }
+
     } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      console.error('Unexpected login error:', error);
+      Alert.alert('Login Error', 'An unexpected error occurred.');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login to your account</Text>
-      <Text style={styles.subtitle}>Welcome back to Teamigo</Text>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Log in to Teamigo</Text>
+        <Text style={styles.subtitle}>Let's get you started</Text>
 
-      <View style={styles.form}>
         <Text style={styles.label}>E-mail</Text>
         <TextInput
           placeholder="example@email.com"
-          placeholderTextColor="#888"
           style={styles.input}
           keyboardType="email-address"
           autoCapitalize="none"
@@ -90,18 +119,12 @@ export default function LoginScreen() {
 
         <Text style={styles.label}>Password</Text>
         <TextInput
-          placeholder="Your Password"
-          placeholderTextColor="#888"
+          placeholder="Your password"
           style={styles.input}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
-
-        <View style={styles.optionsRow}>
-          <Text style={styles.remember}>Remember me</Text>
-          <Text style={styles.forgot}>Forgot Password?</Text>
-        </View>
 
         <Pressable style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginText}>Log In</Text>
@@ -111,56 +134,24 @@ export default function LoginScreen() {
           <Text style={styles.signupText}>Don't have an account? </Text>
           <Pressable onPress={() => router.push('./signup')}>
             <Text style={styles.signupLink}>Sign Up</Text>
-        </Pressable>
+          </Pressable>
         </View>
-      </View>
 
-      <View style={styles.logoContainer}>
-        <Image
-          source={require('@/assets/images/image.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text style={styles.logoCaption}>powered by Teamigo</Text>
-      </View>
-    </View>
+        <View style={styles.logoContainer}>
+          <Image source={require('@/assets/images/image.png')} style={styles.logo} resizeMode="contain" />
+          <Text style={styles.logoCaption}>powered by Teamigo</Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 30,
     paddingTop: Platform.OS === 'android' ? 60 : 80,
     backgroundColor: '#fff',
-  },
-  back: {
-    color: '#00b2a9',
-    fontWeight: '600',
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 16,
-    marginBottom: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  logo: {
-    width: 140,
-    height: 50,
-  },
-  logoCaption: {
-    color: '#666',
-    fontSize: 13,
-    marginTop: 8,
   },
   title: {
     fontSize: 28,
@@ -175,11 +166,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     textAlign: 'center',
   },
-  form: {
-    marginBottom: 20,
-  },
   label: {
-    marginTop: 10,
     marginBottom: 6,
     color: '#333',
     fontWeight: '600',
@@ -193,56 +180,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     backgroundColor: '#f9f9f9',
-    marginBottom: 6,
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 12,
-  },
-  remember: {
-    fontSize: 14,
-    color: '#666',
-  },
-  forgot: {
-    fontSize: 14,
-    color: '#00b2a9',
-    fontWeight: '600',
+    marginBottom: 14,
   },
   loginButton: {
     backgroundColor: '#00b2a9',
-    paddingVertical: 14,
-    borderRadius: 16,
-    marginTop: 12,
-    shadowColor: '#00b2a9',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
+    padding: 16,
+    borderRadius: 14,
+    marginTop: 8,
+    marginBottom: 10,
   },
   loginText: {
-    textAlign: 'center',
     color: '#fff',
+    fontWeight: '700',
     fontSize: 16,
-    fontWeight: '600',
+    textAlign: 'center',
   },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: 12,
+    marginTop: 12,
   },
   signupText: {
+    color: '#333',
     fontSize: 14,
-    color: '#666',
   },
   signupLink: {
-    fontSize: 14,
     color: '#00b2a9',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 14,
   },
-  appleButton: {
-    width: '100%',
-    height: 44,
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    marginTop: 40,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logo: {
+    width: 140,
+    height: 50,
+  },
+  logoCaption: {
+    color: '#666',
+    fontSize: 13,
     marginTop: 8,
   },
 });

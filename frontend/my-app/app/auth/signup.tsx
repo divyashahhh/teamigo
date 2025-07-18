@@ -1,4 +1,5 @@
-import { API_URL } from '@env';import React, { useState } from 'react';
+
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet,
   Pressable, Alert, Platform, Image,
@@ -7,12 +8,10 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as AppleAuthentication from 'expo-apple-authentication';
+
 import { supabase } from '@/utils/supabaseClient';
 
-
-
-export default function SignupScreen() {
+export default function SignupScreen(): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState<'host' | 'member'>('member');
@@ -20,17 +19,17 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     if (!email || !password) {
       Alert.alert('Missing Info', 'Please fill in all fields');
-    return;
-  }
+      return;
+    }
 
-  try {
-      // Create the user in Supabase Auth
+    try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: 'https://divyashahhh.github.io/teamigo-verification-page/', 
           data: {
-            role: selectedRole, // Store role in user metadata
+            role: selectedRole,
           }
         }
       });
@@ -42,22 +41,38 @@ export default function SignupScreen() {
       }
 
       if (data.user) {
-        console.log('User created successfully:', data.user.id);
+        console.log('User created successfully in auth:', data.user.id);
+        console.log('User metadata:', data.user.user_metadata);
+
+        // Insert into public.users
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email: data.user.email,
+            role: selectedRole,
+            email_verified: false,
+          });
+
+        if (insertError) {
+          console.error('Error inserting new user into users table:', insertError);
+          // Optionally alert user, but don't block signup flow
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1200));
+
         Alert.alert(
-          'Success', 
-          'Account created! Please check your email to verify your account.',
+          'Account Created',
+          'Account created! Please check your email to verify before logging in.',
           [
-            {
-              text: 'OK',
-              onPress: () => router.push('./login')
-            }
+            { text: 'OK', onPress: () => router.push('./login') }
           ]
         );
-          }
-        } catch (error) {
+      }
+    } catch (error) {
       console.error('Signup error:', error);
       Alert.alert('Signup Failed', 'Something went wrong. Please try again.');
-      }
+    }
   };
 
   return (
@@ -210,33 +225,46 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 14,
+    padding: 14,
+    fontSize: 16,
+    color: '#333',
+    backgroundColor: '#f9f9f9',
+    marginBottom: 6,
+  },
   roleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
   roleButton: {
-    backgroundColor: '#f9f9f9',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    flex: 1,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    borderRadius: 14,
+    padding: 16,
+    marginRight: 8,
+    backgroundColor: '#fff',
   },
   roleButtonSelected: {
-    backgroundColor: '#e8f4fd',
     borderColor: '#00b2a9',
+    backgroundColor: '#e6f7f6',
   },
   roleButtonText: {
+    fontWeight: '700',
     fontSize: 16,
-    fontWeight: '600',
     color: '#333',
-    marginBottom: 4,
   },
   roleButtonTextSelected: {
     color: '#00b2a9',
   },
   roleDescription: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
   },
   roleDescriptionSelected: {
     color: '#00b2a9',
@@ -252,50 +280,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
   },
   dividerText: {
-    color: '#666',
-    paddingHorizontal: 10,
-    fontSize: 14,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 14,
-    padding: 14,
-    fontSize: 16,
-    color: '#333',
-    backgroundColor: '#f9f9f9',
-    marginBottom: 6,
+    marginHorizontal: 10,
+    color: '#888',
+    fontSize: 13,
+    fontWeight: '600',
   },
   signupButton: {
     backgroundColor: '#00b2a9',
-    paddingVertical: 14,
-    borderRadius: 16,
-    marginTop: 24,
-    shadowColor: '#00b2a9',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
+    padding: 16,
+    borderRadius: 14,
+    marginTop: 16,
+    marginBottom: 10,
   },
   signupText: {
-    textAlign: 'center',
     color: '#fff',
+    fontWeight: '700',
     fontSize: 16,
-    fontWeight: '600',
+    textAlign: 'center',
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
   },
   loginText: {
+    color: '#333',
     fontSize: 14,
-    color: '#666',
   },
   loginLink: {
-    fontSize: 14,
     color: '#00b2a9',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 14,
   },
   logoContainer: {
     alignItems: 'center',
@@ -303,8 +319,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#f9f9f9',
     borderRadius: 16,
-    marginTop: 28,
-    marginBottom: 20,
+    marginBottom: 28,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

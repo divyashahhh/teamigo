@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
@@ -91,12 +92,13 @@ export default function ProfileScreen() {
         Alert.alert('Error', 'User not found');
         return;
       }
-      const response = await fetch(uri);
-      const blob = await response.blob();
       const fileName = `profile-${user.id}-${Date.now()}.jpg`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // Read file as base64
+      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+      const fileBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const { error: uploadError } = await supabase.storage
         .from('profile-images')
-        .upload(fileName, blob);
+        .upload(fileName, fileBytes, { contentType: 'image/jpeg', upsert: true });
       if (uploadError) {
         Alert.alert('Error', 'Failed to upload image');
         return;
@@ -176,9 +178,9 @@ export default function ProfileScreen() {
       </View>
       <View style={styles.container}>
         {/* Profile Image */}
-        <Pressable style={styles.circularFrame} onPress={pickImage}>
+        <Pressable style={[styles.circularFrame, { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }]} onPress={pickImage}>
           {profileImageUrl ? (
-            <Image source={{ uri: profileImageUrl }} style={styles.profileImage} resizeMode="cover" />
+            <Image source={{ uri: profileImageUrl }} style={[styles.profileImage, { width: 120, height: 120, borderRadius: 60 }]} resizeMode="cover" />
           ) : (
             <Text style={styles.addImageText}>+</Text>
           )}

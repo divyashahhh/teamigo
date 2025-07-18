@@ -63,16 +63,16 @@ export default function Index() {
         try {
           // Fetch user role from profiles table
           const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
+            .from('users')
             .select('role')
             .eq('id', user.id)
             .single();
 
           if (profileError) {
             console.error('Profile fetch error:', profileError);
-            // Default to member if profile not found
+            // Default to signup poage if no user found
             console.log('No profile found, defaulting to member');
-            await router.push('../(member)/(tabs)/index');
+            await router.push('../auth/signup');
             return;
           }
 
