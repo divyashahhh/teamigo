@@ -30,17 +30,27 @@ export default function HostAnnouncementsScreen() {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user?.id || null);
     if (!user) {
+      console.log('No user found, setting empty announcements');
       setAnnouncements([]);
       setLoading(false);
       return;
     }
+    console.log('Fetching announcements for user:', user.id);
     // Fetch announcements for this host
     const { data, error } = await supabase
       .from('announcements')
       .select('*')
       .eq('host_id', user.id)
       .order('created_at', { ascending: false });
-    if (!error && data) setAnnouncements(data);
+    
+    console.log('Announcements fetch result:', { data, error });
+    
+    if (!error && data) {
+      console.log('Setting announcements:', data);
+      setAnnouncements(data);
+    } else if (error) {
+      console.error('Error fetching announcements:', error);
+    }
     setLoading(false);
   };
 
@@ -69,14 +79,14 @@ export default function HostAnnouncementsScreen() {
       const blob = await response.blob();
       const fileName = `announcement-${userId}-${Date.now()}.jpg`;
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('announcement-images')
+        .from('announcement-images-new')
         .upload(fileName, blob);
       if (uploadError) {
         Alert.alert('Upload error', uploadError.message);
         return null;
       }
       const { data: urlData } = supabase.storage
-        .from('announcement-images')
+        .from('announcement-images-new')
         .getPublicUrl(fileName);
       return urlData.publicUrl;
     } finally {
@@ -97,6 +107,9 @@ export default function HostAnnouncementsScreen() {
       setSubmitting(false);
       return;
     }
+    console.log('Submitting announcement for user:', user.id);
+    console.log('Announcement data:', { title: title.trim(), description: description.trim() });
+    
     // 1. Insert announcement row without image_url
     const { data: insertData, error: insertError } = await supabase
       .from('announcements')
@@ -108,44 +121,62 @@ export default function HostAnnouncementsScreen() {
       })
       .select()
       .single();
+    
+    console.log('Insert result:', { insertData, insertError });
+    
     if (insertError) {
+      console.error('Error inserting announcement:', insertError);
       Alert.alert('Error', insertError.message);
       setSubmitting(false);
       return;
     }
     const announcementId = insertData.id;
+    console.log('Announcement inserted with ID:', announcementId);
+    
     // 2. Upload the image (if any)
     let imageUrl = null;
     if (image) {
+      console.log('Uploading image for announcement ID:', announcementId);
       const response = await fetch(image);
       const blob = await response.blob();
       const fileName = `${announcementId}/image.jpg`;
       const { error: uploadError } = await supabase.storage
-        .from('announcement-images')
+        .from('announcement-images-new')
         .upload(fileName, blob, { upsert: true });
       if (uploadError) {
+        console.error('Image upload error:', uploadError);
         Alert.alert('Upload error', uploadError.message);
         setSubmitting(false);
         return;
       }
       const { data: urlData } = supabase.storage
-        .from('announcement-images')
+        .from('announcement-images-new')
         .getPublicUrl(fileName);
       imageUrl = urlData.publicUrl;
+      console.log('Image uploaded, URL:', imageUrl);
     }
+    
     // 3. Update the announcement row with the image URL
     if (imageUrl) {
-      await supabase
+      console.log('Updating announcement with image URL:', imageUrl);
+      const { error: updateError } = await supabase
         .from('announcements')
         .update({ image_url: imageUrl })
         .eq('id', announcementId);
+      
+      if (updateError) {
+        console.error('Error updating announcement with image:', updateError);
+      }
     }
+    
+    console.log('Announcement creation completed, refreshing list...');
     setShowModal(false);
     setTitle('');
     setDescription('');
     setImage(null);
     await fetchAnnouncements();
     setSubmitting(false);
+    console.log('Announcement submission process completed');
   };
 
   const handleSelectAnnouncement = (id: string) => {
@@ -153,6 +184,13 @@ export default function HostAnnouncementsScreen() {
       setSelectedIds(selectedIds.filter(sid => sid !== id));
     } else {
       setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const handleLongPressAnnouncement = (id: string) => {
+    if (!selectMode) {
+      setSelectMode(true);
+      setSelectedIds([id]);
     }
   };
 
@@ -168,7 +206,7 @@ export default function HostAnnouncementsScreen() {
           // Extract file name from URL
           const parts = a.image_url.split('/');
           const fileName = parts[parts.length - 1];
-          await supabase.storage.from('announcement-images').remove([fileName]);
+          await supabase.storage.from('announcement-images-new').remove([fileName]);
         }
       }
       // Delete from DB
@@ -183,12 +221,25 @@ export default function HostAnnouncementsScreen() {
     }
   };
 
+  const confirmAndDeleteAnnouncements = () => {
+    if (selectedIds.length === 0) return;
+    Alert.alert(
+      'Delete Announcements',
+      `Are you sure you want to delete the selected announcement${selectedIds.length > 1 ? 's' : ''}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        { text: 'Yes', style: 'destructive', onPress: handleDeleteAnnouncements },
+      ]
+    );
+  };
+
   const renderAnnouncement = (a: any) => (
     <Pressable
       key={a.id}
       style={[styles.card, selectMode && selectedIds.includes(a.id) && { borderColor: '#00b2a9', borderWidth: 2 }]}
       onPress={selectMode ? () => handleSelectAnnouncement(a.id) : undefined}
-      disabled={!selectMode}
+      onLongPress={() => handleLongPressAnnouncement(a.id)}
+      disabled={loading}
     >
       {a.image_url ? (
         <Image source={{ uri: a.image_url }} style={styles.announcementImage} resizeMode="cover" />
@@ -219,26 +270,23 @@ export default function HostAnnouncementsScreen() {
       </ScrollView>
       {/* Floating Plus & Trash Buttons */}
       <View style={styles.fabRow}>
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => setShowModal(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.fabPlus}>+</Text>
-        </TouchableOpacity>
+        {!selectMode ? (
           <TouchableOpacity
-          style={[styles.fab, styles.deleteFab]}
-          onPress={() => {
-            if (selectMode) {
-              handleDeleteAnnouncements();
-            } else {
-              setSelectMode(true);
-            }
-          }}
-          activeOpacity={0.8}
+            style={styles.fab}
+            onPress={() => setShowModal(true)}
+            activeOpacity={0.8}
           >
-          <Text style={styles.fabCross}>×</Text>
+            <Text style={styles.fabPlus}>+</Text>
           </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.fab, styles.deleteFab]}
+            onPress={confirmAndDeleteAnnouncements}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.fabCross}>×</Text>
+          </TouchableOpacity>
+        )}
       </View>
       {/* Modal for New Announcement */}
       <Modal visible={showModal} animationType="slide" transparent>
@@ -329,7 +377,7 @@ const styles = StyleSheet.create({
   fabRow: {
     position: 'absolute',
     right: 28,
-    bottom: 40,
+    bottom: 100, // moved up from 40
     flexDirection: 'row',
     gap: 16,
     zIndex: 10,

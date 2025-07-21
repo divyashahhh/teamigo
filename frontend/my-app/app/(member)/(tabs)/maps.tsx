@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Dimensions, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, View, Dimensions, Text, Image, TouchableOpacity, ScrollView, TextInput, FlatList, Keyboard } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { supabase } from '@/utils/supabaseClient';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,10 @@ interface HostLocation {
 
 export default function MapsScreen() {
   const [hostLocations, setHostLocations] = useState<HostLocation[]>([]);
+  const [search, setSearch] = useState('');
+  const [filteredHosts, setFilteredHosts] = useState<HostLocation[]>([]);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const mapRef = useRef<MapView>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,10 +46,51 @@ export default function MapsScreen() {
     fetchHostLocations();
   }, []);
 
+  useEffect(() => {
+    if (search.trim() === '') {
+      setFilteredHosts([]);
+      setDropdownVisible(false);
+      return;
+    }
+    const lower = search.toLowerCase();
+    const matches = hostLocations.filter(h =>
+      h.name.toLowerCase().includes(lower) ||
+      (Array.isArray(h.tags) && h.tags.some(tag => tag.toLowerCase().includes(lower)))
+    );
+    setFilteredHosts(matches);
+    setDropdownVisible(matches.length > 0);
+  }, [search, hostLocations]);
+
+  const handleDropdownSelect = (host: HostLocation) => {
+    setDropdownVisible(false);
+    setSearch(host.name);
+    Keyboard.dismiss();
+    if (mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: Number(host.location_lat),
+        longitude: Number(host.location_lng),
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 500);
+    }
+    
+    // Navigate to member-in-portal page
+    router.push({
+      pathname: '/member-in-portal',
+      params: {
+        hostId: host.id,
+        name: host.name,
+        description: host.description || '',
+        tags: JSON.stringify(host.tags || []),
+      },
+    });
+  };
+
   const handleMarkerPress = (host: HostLocation) => {
     router.push({
       pathname: '/member-in-portal',
       params: {
+        hostId: host.id,
         name: host.name,
         description: host.description || '',
         tags: JSON.stringify(host.tags || []),
@@ -70,7 +115,37 @@ export default function MapsScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Search Bar Overlay */}
+      <View style={styles.searchBarContainer}>
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Search host by name or tag..."
+          value={search}
+          onChangeText={setSearch}
+          onFocus={() => setDropdownVisible(filteredHosts.length > 0)}
+        />
+        {dropdownVisible && (
+          <View style={styles.dropdown}>
+            <FlatList
+              data={filteredHosts}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => handleDropdownSelect(item)}
+                >
+                  <Text style={styles.dropdownItemText}>{item.name}</Text>
+                  {Array.isArray(item.tags) && item.tags.length > 0 && (
+                    <Text style={styles.dropdownItemTags}>{item.tags.join(', ')}</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
+      </View>
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={initialRegion}
         showsUserLocation
@@ -81,24 +156,16 @@ export default function MapsScreen() {
         {hostLocations.map(host => {
           const lat = Number(host.location_lat);
           const lng = Number(host.location_lng);
-          console.log('Rendering pin for host:', host.name, lat, lng);
           if (isNaN(lat) || isNaN(lng)) return null;
           return (
             <Marker
               key={host.id}
               coordinate={{ latitude: lat, longitude: lng }}
+              pinColor="red"
               title={host.name}
               description={host.location_address || ''}
               onPress={() => handleMarkerPress(host)}
-            >
-              <Marker
-            key={host.id}
-            coordinate={{ latitude: Number(host.location_lat), longitude: Number(host.location_lng) }}
-            pinColor="red"
-            title={host.name}
-            description={host.location_address || ''}
-          />
-            </Marker>
+            />
           );
         })}
       </MapView>
@@ -112,6 +179,52 @@ export default function MapsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  searchBarContainer: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 20,
+    zIndex: 20,
+  },
+  searchBar: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  dropdown: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginTop: 4,
+    maxHeight: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#1C2A67',
+    fontWeight: 'bold',
+  },
+  dropdownItemTags: {
+    fontSize: 13,
+    color: '#1AB09E',
+    marginTop: 2,
   },
   map: {
     width: width,
