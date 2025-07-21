@@ -73,12 +73,24 @@ export default function MapsScreen() {
         longitudeDelta: 0.01,
       }, 500);
     }
+    
+    // Navigate to member-in-portal page
+    router.push({
+      pathname: '/member-in-portal',
+      params: {
+        hostId: host.id,
+        name: host.name,
+        description: host.description || '',
+        tags: JSON.stringify(host.tags || []),
+      },
+    });
   };
 
   const handleMarkerPress = (host: HostLocation) => {
     router.push({
       pathname: '/member-in-portal',
       params: {
+        hostId: host.id,
         name: host.name,
         description: host.description || '',
         tags: JSON.stringify(host.tags || []),

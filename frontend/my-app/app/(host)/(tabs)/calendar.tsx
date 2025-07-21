@@ -92,9 +92,21 @@ const CalendarPage = () => {
     if (error) {
       console.error('Error fetching events:', error);
       setEvents([]);
+      setEventsByDate({});
     } else {
       setEvents(data || []);
+      setEventsByDate(buildEventsByDate(data || []));
     }
+  };
+
+  // Helper to build eventsByDate from events array
+  const buildEventsByDate = (eventsArr: any[]) => {
+    const byDate: Record<string, { id: number; text: string; color: string }[]> = {};
+    for (const ev of eventsArr) {
+      if (!byDate[ev.date]) byDate[ev.date] = [];
+      byDate[ev.date].push({ id: ev.id, text: ev.content, color: ev.color });
+    }
+    return byDate;
   };
 
   // Create event
@@ -172,11 +184,8 @@ const CalendarPage = () => {
       }
       
       if (result.data) {
-        const newEvent = result.data;
-        const updated = { ...eventsByDate };
-        if (!updated[selectedDate]) updated[selectedDate] = [];
-        updated[selectedDate].push({ id: newEvent.id, text: newEvent.content, color: newEvent.color });
-        setEventsByDate(updated);
+        // After creating, fetch all events to update eventsByDate
+        await fetchEvents(userId);
         setEventText('');
         setSelectedColor(colorOptions[0].color);
         setModalVisible(false);
