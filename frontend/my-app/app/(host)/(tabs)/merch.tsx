@@ -89,62 +89,80 @@ export default function MerchScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Your Merchandise</Text>
-      {loading ? (
-        <ActivityIndicator color="#00b2a9" style={{ marginTop: 40 }} />
-      ) : merch.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No merchandise yet.</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={merch}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
+    <View style={{ flex: 1 }}>
+      {/* Done button in select mode, at absolute top right of the screen */}
+      {selectMode && (
+        <View style={[StyleSheet.absoluteFillObject, { pointerEvents: 'box-none' }]}>
+          <View style={styles.doneButtonScreenEdge}>
             <TouchableOpacity
-              style={[styles.card, selectMode && selectedIds.includes(item.id) && { borderColor: '#00b2a9', borderWidth: 2 }]}
-              onPress={selectMode ? () => handleSelect(item.id) : undefined}
-              onLongPress={() => handleLongPress(item.id)}
-              disabled={loading}
+              style={styles.doneButton}
+              onPress={() => {
+                setSelectMode(false);
+                setSelectedIds([]);
+              }}
             >
-              {item.image_url ? (
-                <Image source={{ uri: item.image_url }} style={styles.image} />
-              ) : (
-                <View style={styles.imagePlaceholder}><Text>🛍️</Text></View>
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.price}>${item.price?.toFixed(2) ?? ''}</Text>
-              </View>
-              {selectMode && (
-                <View style={styles.checkboxCircle}>
-                  {selectedIds.includes(item.id) && <View style={styles.checkboxInner} />}
+              <Text style={styles.doneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+      <View style={styles.container}>
+        <Text style={styles.header}>Your Merchandise</Text>
+        {loading ? (
+          <ActivityIndicator color="#00b2a9" style={{ marginTop: 40 }} />
+        ) : merch.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No merchandise yet.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={merch}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.card, selectMode && selectedIds.includes(item.id) && { borderColor: '#00b2a9', borderWidth: 2 }]}
+                onPress={selectMode ? () => handleSelect(item.id) : undefined}
+                onLongPress={() => handleLongPress(item.id)}
+                disabled={loading}
+              >
+                {item.image_url ? (
+                  <Image source={{ uri: item.image_url }} style={styles.image} />
+                ) : (
+                  <View style={styles.imagePlaceholder}><Text>🛍️</Text></View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.title}>{item.title}</Text>
+                  <Text style={styles.price}>${item.price?.toFixed(2) ?? ''}</Text>
                 </View>
-              )}
+                {selectMode && (
+                  <View style={styles.checkboxCircle}>
+                    {selectedIds.includes(item.id) && <View style={styles.checkboxInner} />}
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
+            contentContainerStyle={{ paddingBottom: 120 }}
+          />
+        )}
+        <View style={styles.fabRow}>
+          {!selectMode ? (
+            <TouchableOpacity
+              style={styles.fab}
+              onPress={() => router.push('../merch/setup')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.fabPlus}>+</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.fab, styles.deleteFab]}
+              onPress={confirmAndDelete}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.fabCross}>×</Text>
             </TouchableOpacity>
           )}
-          contentContainerStyle={{ paddingBottom: 120 }}
-        />
-      )}
-      <View style={styles.fabRow}>
-        {!selectMode ? (
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => router.push('../merch/setup')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.fabPlus}>+</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.fab, styles.deleteFab]}
-            onPress={confirmAndDelete}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.fabCross}>×</Text>
-          </TouchableOpacity>
-        )}
+        </View>
       </View>
     </View>
   );
@@ -266,5 +284,36 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: '#00b2a9',
+  },
+  doneButtonContainer: {
+    position: 'absolute',
+    top: 40,
+    right: 24,
+    zIndex: 100,
+  },
+  doneButton: {
+    backgroundColor: '#00b2a9',
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    shadowColor: '#00b2a9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  doneButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  doneButtonScreenEdge: {
+    position: 'absolute',
+    top: 40,
+    right: 16,
+    zIndex: 200,
+    alignItems: 'flex-end',
+    width: '100%',
+    pointerEvents: 'box-none',
   },
 }); 
