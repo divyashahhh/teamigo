@@ -58,9 +58,9 @@ export default function SignupScreen(): React.JSX.Element {
           console.error('Error inserting new user into users table:', insertError);
           // Optionally alert user, but don't block signup flow
         }
-
+        
         await new Promise(resolve => setTimeout(resolve, 1200));
-
+       
         Alert.alert(
           'Account Created',
           'Account created! Please check your email to verify before logging in.',

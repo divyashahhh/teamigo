@@ -1,11 +1,33 @@
-import React from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { useMemberSubscriptions } from '@/hooks/useMemberSubscriptions';
 import { useMemberFeed } from '@/hooks/useMemberFeed';
+import { supabase } from '@/utils/supabaseClient';
 
 export default function MemberMerch() {
   const { hostIds, loading: subsLoading, error: subsError } = useMemberSubscriptions();
   const { data: merch, loading, error } = useMemberFeed('merchandise', hostIds);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [orgs, setOrgs] = useState<{ id: string, name: string }[]>([]);
+  const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (hostIds.length > 0) {
+      supabase
+        .from('users')
+        .select('id, name')
+        .in('id', hostIds)
+        .then(({ data }) => {
+          setOrgs(data || []);
+        });
+    } else {
+      setOrgs([]);
+    }
+  }, [hostIds]);
+
+  const filteredMerch = selectedOrg
+    ? merch.filter((m: any) => m.host_id === selectedOrg)
+    : merch;
 
   if (subsLoading || loading) {
     return <View style={styles.center}><ActivityIndicator color="#00b2a9" /></View>;
@@ -15,26 +37,66 @@ export default function MemberMerch() {
   }
 
   return (
-    <FlatList
-      data={merch}
-      keyExtractor={item => item.id}
-      contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
-      renderItem={({ item }) => (
-        <View style={styles.card}>
-          {item.image_url ? (
-            <Image source={{ uri: item.image_url }} style={styles.image} />
-          ) : (
-            <View style={styles.imagePlaceholder}><Text>🛍️</Text></View>
-          )}
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.price}>${item.price?.toFixed(2) ?? ''}</Text>
-            <Text style={styles.desc}>{item.description}</Text>
-          </View>
+    <View style={{ flex: 1 }}>
+      {/* Filter Button */}
+      <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)}>
+        <Text style={styles.filterButtonText}>Filter</Text>
+      </TouchableOpacity>
+      {/* Show selected org */}
+      {selectedOrg && (
+        <View style={styles.selectedOrgBar}>
+          <Text style={styles.selectedOrgText}>
+            Showing: {orgs.find(o => o.id === selectedOrg)?.name || 'Organisation'}
+          </Text>
+          <Pressable onPress={() => setSelectedOrg(null)}>
+            <Text style={styles.clearFilterText}>Clear Filter</Text>
+          </Pressable>
         </View>
       )}
-      ListEmptyComponent={<Text style={styles.empty}>No merch from your subscriptions yet.</Text>}
-    />
+      <FlatList
+        data={filteredMerch}
+        keyExtractor={item => item.id}
+        contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            {item.image_url ? (
+              <Image source={{ uri: item.image_url }} style={styles.image} />
+            ) : (
+              <View style={styles.imagePlaceholder}><Text>🛍️</Text></View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.price}>${item.price?.toFixed(2) ?? ''}</Text>
+              <Text style={styles.desc}>{item.description}</Text>
+            </View>
+          </View>
+        )}
+        ListEmptyComponent={<Text style={styles.empty}>No merch from your subscriptions yet.</Text>}
+      />
+      {/* Modal for org filter */}
+      <Modal visible={filterModalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Filter by Organisation</Text>
+            {orgs.map(org => (
+              <TouchableOpacity
+                key={org.id}
+                style={[styles.orgOption, selectedOrg === org.id && styles.selectedOrgOption]}
+                onPress={() => {
+                  setSelectedOrg(org.id);
+                  setFilterModalVisible(false);
+                }}
+              >
+                <Text style={styles.orgName}>{org.name}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.closeModalButton} onPress={() => setFilterModalVisible(false)}>
+              <Text style={styles.closeModalText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
@@ -72,4 +134,93 @@ const styles = StyleSheet.create({
   price: { fontSize: 16, color: '#00b2a9', marginTop: 4 },
   desc: { fontSize: 16, color: '#444', marginTop: 4 },
   empty: { color: '#888', fontSize: 16, textAlign: 'center', marginTop: 40 },
+  filterButton: {
+    position: 'absolute',
+    top: 10,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: '#00b2a9',
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    shadowColor: '#00b2a9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  filterButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  selectedOrgBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#e6f7f6',
+    paddingVertical: 8,
+    marginTop: 48,
+    marginBottom: 8,
+    borderRadius: 12,
+    marginHorizontal: 20,
+    gap: 12,
+  },
+  selectedOrgText: {
+    color: '#1AB09E',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  clearFilterText: {
+    color: '#ff4444',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: 300,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 18,
+    color: '#1C2A67',
+  },
+  orgOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    marginBottom: 8,
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: '#f7f7f7',
+  },
+  selectedOrgOption: {
+    backgroundColor: '#1AB09E',
+  },
+  orgName: {
+    fontSize: 16,
+    color: '#1C2A67',
+    fontWeight: '600',
+  },
+  closeModalButton: {
+    marginTop: 16,
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: '#eee',
+  },
+  closeModalText: {
+    color: '#333',
+    fontSize: 16,
+  },
 }); 

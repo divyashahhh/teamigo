@@ -46,7 +46,7 @@ const colorOptions = [
 
 const CalendarPage = () => {
   const [selectedDate, setSelectedDate] = useState('');
-  const [eventsByDate, setEventsByDate] = useState<Record<string, { id: number; text: string; color: string }[]>>({});
+  const [eventsByDate, setEventsByDate] = useState<Record<string, { id: number; text: string; color: string; description?: string }[]>>({});
   const [eventText, setEventText] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -59,6 +59,11 @@ const CalendarPage = () => {
   const [userId, setUserId] = useState<string | null>(null);
   // State for events
   const [events, setEvents] = useState<any[]>([]);
+  // Add new state for description, selectMode, and selectedIds
+  const [eventDescription, setEventDescription] = useState('');
+  const [editEventDescription, setEditEventDescription] = useState('');
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   useEffect(() => {
     const initializeCalendar = async () => {
@@ -96,15 +101,17 @@ const CalendarPage = () => {
     } else {
       setEvents(data || []);
       setEventsByDate(buildEventsByDate(data || []));
+      setEventDescription('');
+      setEditEventDescription('');
     }
   };
 
   // Helper to build eventsByDate from events array
   const buildEventsByDate = (eventsArr: any[]) => {
-    const byDate: Record<string, { id: number; text: string; color: string }[]> = {};
+    const byDate: Record<string, { id: number; text: string; color: string; description?: string }[]> = {};
     for (const ev of eventsArr) {
       if (!byDate[ev.date]) byDate[ev.date] = [];
-      byDate[ev.date].push({ id: ev.id, text: ev.content, color: ev.color });
+      byDate[ev.date].push({ id: ev.id, text: ev.content, color: ev.color, description: ev.description });
     }
     return byDate;
   };
@@ -134,7 +141,9 @@ const CalendarPage = () => {
     if (error) {
       Alert.alert('Error', 'Failed to update event');
     } else {
-      fetchEvents(updates.user_id);
+      // Use updates.user_id if present, else fallback to userId from state
+      await fetchEvents(updates.user_id || userId);
+      setEditModalVisible(false);
     }
   };
 
@@ -174,7 +183,8 @@ const CalendarPage = () => {
           user_id: userId,
           date: selectedDate,
           content: eventText.trim(),
-          color: selectedColor
+          color: selectedColor,
+          description: eventDescription.trim(),
         }])
         .select()
         .single();
@@ -187,6 +197,7 @@ const CalendarPage = () => {
         // After creating, fetch all events to update eventsByDate
         await fetchEvents(userId);
         setEventText('');
+        setEventDescription('');
         setSelectedColor(colorOptions[0].color);
         setModalVisible(false);
       }
@@ -262,6 +273,46 @@ const CalendarPage = () => {
     );
   };
 
+  // Add long-press select/delete logic
+  const handleSelectEvent = (id: number) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(sid => sid !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+  const handleLongPressEvent = (id: number) => {
+    if (!selectMode) {
+      setSelectMode(true);
+      setSelectedIds([id]);
+    }
+  };
+  const handleDeleteEvents = async () => {
+    if (selectedIds.length === 0) return;
+    setIsLoading(true);
+    try {
+      await supabase.from('events').delete().in('id', selectedIds);
+      setSelectedIds([]);
+      setSelectMode(false);
+      await fetchEvents(userId!);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to delete events');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const confirmAndDeleteEvents = () => {
+    if (selectedIds.length === 0) return;
+    Alert.alert(
+      'Delete Events',
+      `Are you sure you want to delete the selected event${selectedIds.length > 1 ? 's' : ''}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        { text: 'Yes', style: 'destructive', onPress: handleDeleteEvents },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }], opacity: headerOpacity }]}>
@@ -306,19 +357,34 @@ const CalendarPage = () => {
             eventsByDate[selectedDate]?.map((event) => (
               <TouchableOpacity
                 key={event.id}
-                style={[styles.eventCard, { borderLeftColor: event.color }]}
-                onPress={() => {
+                style={[
+                  styles.eventCard,
+                  { borderLeftColor: event.color },
+                  selectMode && selectedIds.includes(event.id) && { borderColor: COLORS.primary, borderWidth: 2 }
+                ]}
+                onPress={selectMode ? () => handleSelectEvent(event.id) : () => {
                   setSelectedEventId(event.id);
                   setEventText(event.text);
+                  setEditEventDescription(event.description || '');
                   setSelectedColor(event.color);
                   setEditModalVisible(true);
                 }}
+                onLongPress={() => handleLongPressEvent(event.id)}
+                disabled={isLoading}
               >
                 <View style={styles.eventContent}>
                   <Text style={styles.eventTitle}>{event.text}</Text>
+                  {event.description ? (
+                    <Text style={styles.eventDescription}>{event.description}</Text>
+                  ) : null}
                   <Text style={styles.eventTime}>All day</Text>
                 </View>
                 <View style={[styles.eventDot, { backgroundColor: event.color }]} />
+                {selectMode && (
+                  <View style={styles.checkboxCircle}>
+                    {selectedIds.includes(event.id) && <View style={styles.checkboxInner} />}
+                  </View>
+                )}
               </TouchableOpacity>
             ))
           ) : (
@@ -337,6 +403,13 @@ const CalendarPage = () => {
               placeholder="Event title"
               value={eventText}
               onChangeText={setEventText}
+              style={styles.input}
+              placeholderTextColor={COLORS.muted}
+            />
+            <TextInput
+              placeholder="Description (optional)"
+              value={eventDescription}
+              onChangeText={setEventDescription}
               style={styles.input}
               placeholderTextColor={COLORS.muted}
             />
@@ -378,10 +451,24 @@ const CalendarPage = () => {
         <View style={styles.modalWrapper}>
           <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
           <View style={styles.modalContent}>
+            {/* Close button at top right */}
+            <TouchableOpacity
+              style={styles.closeEditButton}
+              onPress={() => setEditModalVisible(false)}
+            >
+              <Text style={styles.closeEditButtonText}>×</Text>
+            </TouchableOpacity>
             <Text style={styles.modalTitle}>Edit Event</Text>
             <TextInput
               value={eventText}
               onChangeText={setEventText}
+              style={styles.input}
+              placeholderTextColor={COLORS.muted}
+            />
+            <TextInput
+              placeholder="Description (optional)"
+              value={editEventDescription}
+              onChangeText={setEditEventDescription}
               style={styles.input}
               placeholderTextColor={COLORS.muted}
             />
@@ -403,16 +490,39 @@ const CalendarPage = () => {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.deleteButton]}
-                onPress={() => deleteEvent(selectedEventId?.toString() || '', userId || '')}
+                onPress={() => {
+                  if (!selectedEventId) {
+                    Alert.alert('Error', 'No event selected for deletion.');
+                    return;
+                  }
+                  Alert.alert(
+                    'Delete Event',
+                    'Are you sure you want to delete this event?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: async () => {
+                        await deleteEvent(selectedEventId.toString(), userId || '');
+                        setEditModalVisible(false);
+                      }},
+                    ]
+                  );
+                }}
               >
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
-                onPress={() => updateEvent(selectedEventId?.toString() || '', {
-                  content: eventText,
-                  color: selectedColor
-                })}
+                onPress={() => {
+                  if (!selectedEventId) {
+                    Alert.alert('Error', 'No event selected for update.');
+                    return;
+                  }
+                  updateEvent(selectedEventId.toString(), {
+                    content: eventText,
+                    color: selectedColor,
+                    description: editEventDescription,
+                  });
+                }}
               >
                 <Text style={styles.saveButtonText}>Update</Text>
               </TouchableOpacity>
@@ -426,6 +536,36 @@ const CalendarPage = () => {
           </View>
         </View>
       </Modal>
+      {selectMode && (
+        <TouchableOpacity
+          style={styles.doneButtonScreenEdge}
+          onPress={() => {
+            setSelectMode(false);
+            setSelectedIds([]);
+          }}
+        >
+          <Text style={styles.doneButtonText}>Done</Text>
+        </TouchableOpacity>
+      )}
+      <View style={styles.fabRow}>
+        {selectMode ? (
+          <TouchableOpacity
+            style={[styles.fab, styles.deleteFab]}
+            onPress={confirmAndDeleteEvents}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.fabCross}>×</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => setModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.fabPlus}>+</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 };
@@ -511,6 +651,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
+    marginBottom: 4
+  },
+  eventDescription: {
+    fontSize: 14,
+    color: COLORS.muted,
     marginBottom: 4
   },
   eventTime: {
@@ -661,6 +806,82 @@ const styles = StyleSheet.create({
   emptyDay: {
     width: 32,
     height: 48,
+  },
+  checkboxCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORS.muted,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  checkboxInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.primary,
+  },
+  doneButtonScreenEdge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    padding: 10,
+    backgroundColor: COLORS.primary,
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  doneButtonText: {
+    color: COLORS.light,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  fabRow: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    flexDirection: 'row',
+    zIndex: 10,
+  },
+  fab: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  fabPlus: {
+    fontSize: 24,
+    color: COLORS.light,
+    fontWeight: '600',
+  },
+  deleteFab: {
+    backgroundColor: COLORS.error,
+  },
+  fabCross: {
+    fontSize: 24,
+    color: COLORS.light,
+    fontWeight: '600',
+  },
+  closeEditButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: 'transparent',
+    padding: 8,
+  },
+  closeEditButtonText: {
+    fontSize: 28,
+    color: COLORS.muted,
+    fontWeight: 'bold',
   },
 });
 

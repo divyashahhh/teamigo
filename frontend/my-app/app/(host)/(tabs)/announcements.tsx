@@ -256,101 +256,115 @@ export default function HostAnnouncementsScreen() {
   );
 
   return (
-    <View style={styles.mainContainer}>
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
-        {loading ? (
-          <ActivityIndicator color="#00b2a9" style={{ marginTop: 40 }} />
-        ) : announcements.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No announcements yet.</Text>
-          </View>
-        ) : (
-          announcements.map(renderAnnouncement)
-        )}
-      </ScrollView>
-      {/* Floating Plus & Trash Buttons */}
-      <View style={styles.fabRow}>
-        {!selectMode ? (
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => setShowModal(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.fabPlus}>+</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.fab, styles.deleteFab]}
-            onPress={confirmAndDeleteAnnouncements}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.fabCross}>×</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      {/* Modal for New Announcement */}
-      <Modal visible={showModal} animationType="slide" transparent>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <View style={{ flex: 1 }}>
+      {/* Done button in select mode, at absolute top right of the screen, overlaying header */}
+      {selectMode && (
+        <TouchableOpacity
+          style={styles.doneButtonScreenEdge}
+          onPress={() => {
+            setSelectMode(false);
+            setSelectedIds([]);
+          }}
         >
-          <View style={styles.modalCenterWrap}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>New Announcement</Text>
-              {/* Image Picker */}
-              <Pressable style={styles.circularFrame} onPress={pickImage}>
-                {image ? (
-                  <Image source={{ uri: image }} style={styles.profileImage} resizeMode="cover" />
-                ) : (
-                  <Text style={styles.addImageText}>+</Text>
-                )}
-                {imageUploading && <ActivityIndicator style={{ position: 'absolute', alignSelf: 'center', top: 40 }} color="#00b2a9" />}
-              </Pressable>
-              <TextInput
-                style={styles.input}
-                value={title}
-                onChangeText={setTitle}
-                placeholder="Title"
-                placeholderTextColor="#888"
-                returnKeyType="next"
-              />
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Description"
-                placeholderTextColor="#888"
-                multiline
-                numberOfLines={3}
-                returnKeyType="done"
-                blurOnSubmit={true}
-              />
-              <View style={styles.modalButtonsRow}>
-                <Pressable
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => {
-                    setShowModal(false);
-                    setTitle('');
-                    setDescription('');
-                    setImage(null);
-                  }}
-                  disabled={submitting}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={styles.doneButtonText}>Done</Text>
+        </TouchableOpacity>
+      )}
+      <View style={styles.mainContainer}>
+        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
+          {loading ? (
+            <ActivityIndicator color="#00b2a9" style={{ marginTop: 40 }} />
+          ) : announcements.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No announcements yet.</Text>
+            </View>
+          ) : (
+            announcements.map(renderAnnouncement)
+          )}
+        </ScrollView>
+        {/* Floating Plus & Trash Buttons */}
+        <View style={styles.fabRow}>
+          {!selectMode ? (
+            <TouchableOpacity
+              style={styles.fab}
+              onPress={() => setShowModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.fabPlus}>+</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.fab, styles.deleteFab]}
+              onPress={confirmAndDeleteAnnouncements}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.fabCross}>×</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {/* Modal for New Announcement */}
+        <Modal visible={showModal} animationType="slide" transparent>
+          <KeyboardAvoidingView
+            style={styles.modalOverlay}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <View style={styles.modalCenterWrap}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>New Announcement</Text>
+                {/* Image Picker */}
+                <Pressable style={styles.circularFrame} onPress={pickImage}>
+                  {image ? (
+                    <Image source={{ uri: image }} style={styles.profileImage} resizeMode="cover" />
+                  ) : (
+                    <Text style={styles.addImageText}>+</Text>
+                  )}
+                  {imageUploading && <ActivityIndicator style={{ position: 'absolute', alignSelf: 'center', top: 40 }} color="#00b2a9" />}
                 </Pressable>
-                <Pressable
-                  style={[styles.modalButton, styles.saveButton, submitting && styles.saveButtonDisabled]}
-                  onPress={handleSubmit}
-                  disabled={submitting}
-                >
-                  <Text style={styles.saveButtonText}>{submitting ? 'Posting...' : 'Post'}</Text>
-                </Pressable>
+                <TextInput
+                  style={styles.input}
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="Title"
+                  placeholderTextColor="#888"
+                  returnKeyType="next"
+                />
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Description"
+                  placeholderTextColor="#888"
+                  multiline
+                  numberOfLines={3}
+                  returnKeyType="done"
+                  blurOnSubmit={true}
+                />
+                <View style={styles.modalButtonsRow}>
+                  <Pressable
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowModal(false);
+                      setTitle('');
+                      setDescription('');
+                      setImage(null);
+                    }}
+                    disabled={submitting}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.modalButton, styles.saveButton, submitting && styles.saveButtonDisabled]}
+                    onPress={handleSubmit}
+                    disabled={submitting}
+                  >
+                    <Text style={styles.saveButtonText}>{submitting ? 'Posting...' : 'Post'}</Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
+          </KeyboardAvoidingView>
+        </Modal>
       </View>
-        </KeyboardAvoidingView>
-      </Modal>
-        </View>
+    </View>
   );
 }
 
@@ -568,6 +582,27 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: 16,
+  },
+  doneButtonScreenEdge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 9999,
+    backgroundColor: '#00b2a9',
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    shadowColor: '#00b2a9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 10,
+    alignItems: 'center',
+  },
+  doneButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 16,
   },
 });
