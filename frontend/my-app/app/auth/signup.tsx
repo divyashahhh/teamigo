@@ -84,7 +84,7 @@ export default function SignupScreen(): React.JSX.Element {
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable onPress={() => router.push('./login')}>
+        <Pressable onPress={() => router.replace('/')}>
           <Text style={styles.back}>← Back</Text>
         </Pressable>
 

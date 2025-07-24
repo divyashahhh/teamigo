@@ -1,109 +1,138 @@
-import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Text, Pressable } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, ActivityIndicator, Text, Pressable, TouchableOpacity, Text as RNText, Dimensions } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../utils/supabaseClient';
 import * as SplashScreen from 'expo-splash-screen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Onboarding from '../onboarding/onboarding';
 
-// Keep the splash screen visible while we fetch resources
+const { width } = Dimensions.get('window');
+
+// OnboardingScreen wrapper to add Login/Signup buttons on last slide
+function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
+  const [page, setPage] = useState(0);
+  // const scrollRef = useRef<any>(null); // Not needed since we don't use ref
+
+  // Copy onboardingData from onboarding.tsx for button logic
+  // const onboardingData = [
+  //   { title: 'Welcome to Teamigo!' },
+  //   { title: 'Effortless!' },
+  //   { title: 'Join and Grow!' },
+  // ];
+
+  // Render onboarding with custom buttons on last slide
+  return (
+    <View style={{ flex: 1 }}>
+      <OnboardingWithButtons
+        page={page}
+        setPage={setPage}
+        onComplete={onComplete}
+      />
+    </View>
+  );
+}
+
+// Custom onboarding with Login/Signup buttons on last slide
+function OnboardingWithButtons({ page, setPage, onComplete }: any) {
+  // const onboardingData = [
+  //   { title: 'Welcome to Teamigo!' },
+  //   { title: 'Effortless!' },
+  //   { title: 'Join and Grow!' },
+  // ];
+  return (
+    <View style={{ flex: 1 }}>
+      <Onboarding
+        page={page}
+        setPage={setPage}
+        customButtons={
+          page === 2 ? (
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}>
+              <TouchableOpacity
+                style={{ backgroundColor: '#222B45', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, marginRight: 12 }}
+                onPress={() => router.push('/auth/login')}
+              >
+                <RNText style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>Login</RNText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ backgroundColor: '#fff', borderWidth: 2, borderColor: '#222B45', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12 }}
+                onPress={() => router.push('/auth/signup')}
+              >
+                <RNText style={{ color: '#222B45', fontSize: 18, fontWeight: 'bold' }}>Sign Up</RNText>
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
+        onLastSlideComplete={onComplete}
+      />
+    </View>
+  );
+}
+
 SplashScreen.preventAutoHideAsync();
 
 export default function Index() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const checkLoginStatus = async () => {
     try {
-      console.log('Starting auth check... (attempt:', retryCount + 1, ')');
       setLoading(true);
       setError(null);
-      
+      // Check onboarding status
+      const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
+      if (!onboardingComplete) {
+        setShowOnboarding(true);
+        setLoading(false);
+        return;
+      }
       // Add a timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Auth check timeout')), 8000)
       );
-      
       const authPromise = supabase.auth.getUser();
-      
       const { data: { user }, error: authError } = await Promise.race([
         authPromise,
         timeoutPromise
       ]) as any;
-
-      console.log('Auth check completed:', { user: !!user, error: authError });
-
-      // Check if this is just a "no session" error (normal when not logged in)
       if (authError && authError.message && authError.message.includes('Auth session missing')) {
-        console.log('No user session found, redirecting to login...');
-        try {
-          await router.push('./auth/login');
-          console.log('Redirect to login completed');
-        } catch (redirectError) {
-          console.error('Redirect error:', redirectError);
-          setError('Navigation error');
-        }
+        setShowOnboarding(false);
+        await router.push('./auth/login');
         return;
       }
-
-      // Handle other auth errors
       if (authError) {
-        console.error('Auth check error:', authError);
+        setShowOnboarding(false);
         setError('Authentication error');
-        try {
-          await router.push('./auth/login');
-        } catch (redirectError) {
-          console.error('Redirect error:', redirectError);
-          setError('Navigation error');
-        }
+        await router.push('./auth/login');
         return;
       }
-
       if (user) {
-        console.log('User found, checking role...');
         try {
-          // Fetch user role from profiles table
           const { data: profileData, error: profileError } = await supabase
             .from('users')
             .select('role')
             .eq('id', user.id)
             .single();
-
           if (profileError) {
-            console.error('Profile fetch error:', profileError);
-            // Default to signup poage if no user found
-            console.log('No profile found, defaulting to member');
-            await router.push('../auth/signup');
+            setShowOnboarding(true);
+            setLoading(false);
             return;
           }
-
           const userRole = profileData?.role || 'member';
-          console.log('User role found:', userRole);
-
-          // Redirect based on role
           if (userRole === 'host') {
-            console.log('Redirecting to host portal...');
             await router.push('/(host)/(tabs)/portal');
           } else {
-            console.log('Redirecting to member profile...');
             await router.push('/(member)/(tabs)/profile');
           }
-          console.log('Role-based redirect completed');
         } catch (redirectError) {
-          console.error('Redirect error:', redirectError);
           setError('Navigation error');
         }
       } else {
-        console.log('No user found, redirecting to login...');
-        try {
-          await router.push('./auth/login');
-          console.log('Redirect to login completed');
-        } catch (redirectError) {
-          console.error('Redirect error:', redirectError);
-          setError('Navigation error');
-        }
+        setShowOnboarding(false);
+        await router.push('./auth/login');
       }
     } catch (error) {
-      console.error('Unexpected error during auth check:', error);
       setError('Connection error - tap to retry');
     } finally {
       setLoading(false);
@@ -115,52 +144,38 @@ export default function Index() {
       try {
         await checkLoginStatus();
       } catch (error) {
-        console.error('Error during app initialization:', error);
         setError('App initialization failed');
       } finally {
-        // Always hide the splash screen after auth check is complete
         try {
           await SplashScreen.hideAsync();
-          console.log('Splash screen hidden');
-        } catch (splashError) {
-          console.error('Error hiding splash screen:', splashError);
-        }
+        } catch {}
       }
     };
-
-    // Add a timeout to ensure splash screen is hidden
     const timeout = setTimeout(async () => {
       try {
         await SplashScreen.hideAsync();
-        console.log('Splash screen hidden by timeout');
-      } catch (error) {
-        console.error('Error hiding splash screen by timeout:', error);
-      }
-    }, 5000); // 5 second timeout
-    
+      } catch {}
+    }, 5000);
     initializeApp();
-    
     return () => clearTimeout(timeout);
-  }, []);
+  }, [retryCount]);
 
   const handleRetry = () => {
     setRetryCount(prev => prev + 1);
     checkLoginStatus();
   };
 
-  const handleManualLogin = async () => {
-    console.log('Manual login button pressed');
-    try {
-      await router.push('./auth/login');
-      console.log('Manual redirect to login completed');
-    } catch (error) {
-      console.error('Manual redirect error:', error);
-      setError('Manual navigation failed');
-    }
-  };
+  // Custom onboarding logic
+  if (showOnboarding) {
+    return <OnboardingScreen onComplete={async () => {
+      await AsyncStorage.setItem('onboardingComplete', 'true');
+      setShowOnboarding(false);
+      setLoading(true);
+      checkLoginStatus();
+    }} />;
+  }
 
   if (loading) {
-    console.log('Rendering loading screen');
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
         <ActivityIndicator size="large" color="#00b2a9" />
@@ -177,7 +192,6 @@ export default function Index() {
   }
 
   if (error) {
-    console.log('Rendering error screen');
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
         <Text style={{ color: '#ff0000', marginBottom: 20, textAlign: 'center' }}>
@@ -197,7 +211,7 @@ export default function Index() {
           </Text>
         </Pressable>
         <Pressable 
-          onPress={handleManualLogin}
+          onPress={handleRetry}
           style={{
             marginTop: 10,
             paddingHorizontal: 20,
