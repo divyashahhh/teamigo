@@ -9,8 +9,31 @@ import * as ImagePicker from 'expo-image-picker';
 import MapView, { Marker, Region, MapPressEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as FileSystem from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
+
+const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dgmcfhlkc/image/upload';
+const CLOUDINARY_PRESET = 'user_uploads';
+
+const uploadToCloudinary = async (uri: string) => {
+  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+  const data = new FormData();
+  data.append('file', `data:image/jpeg;base64,${base64}`);
+  data.append('upload_preset', CLOUDINARY_PRESET);
+  // folder is set in preset, but you can add: data.append('folder', 'profile_pics');
+
+  const res = await fetch(CLOUDINARY_URL, {
+    method: 'POST',
+    body: data,
+  });
+  const result = await res.json();
+  if (result.secure_url) {
+    return result.secure_url;
+  } else {
+    throw new Error('Cloudinary upload failed');
+  }
+};
 
 export default function PortalScreen() {
   const [loading, setLoading] = useState(true);
@@ -144,25 +167,12 @@ export default function PortalScreen() {
         Alert.alert('Error', 'User not found');
         return;
       }
-      const fileName = `host-profile-pics/${user.id}-${Date.now()}.jpg`;
-      // Read file as base64
-      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-      const fileBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      const { error: uploadError } = await supabase.storage
-        .from('profile-images')
-        .upload(fileName, fileBytes, { contentType: 'image/jpeg', upsert: true });
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        Alert.alert('Error', 'Failed to upload image');
-        return;
-      }
-      const { data: urlData } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(fileName);
+      const cloudinaryUrl = await uploadToCloudinary(uri);
+      setProfileImageUrl(cloudinaryUrl + '?t=' + Date.now());
       const { error: updateError } = await supabase
         .from('users')
         .update({ 
-          profile_image_url: urlData.publicUrl,
+          profile_image_url: cloudinaryUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -171,7 +181,6 @@ export default function PortalScreen() {
         Alert.alert('Error', 'Failed to update profile image');
         return;
       }
-      setProfileImageUrl(urlData.publicUrl);
       Alert.alert('Success', 'Profile image updated!');
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -341,12 +350,27 @@ export default function PortalScreen() {
         {/* Header Section */}
         <View style={styles.headerSection}>
           {/* Profile Image */}
-          <Pressable style={[styles.circularFrame, { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }]} onPress={pickImage}>
-            {profileImageUrl ? (
-              <Image source={{ uri: profileImageUrl }} style={[styles.profileImage, { width: 120, height: 120, borderRadius: 60 }]} resizeMode="cover" />
-            ) : (
-              <Text style={styles.addImageText}>+</Text>
-            )}
+          <Pressable
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 50,
+              borderWidth: 4,
+              borderColor: '#fff',
+              overflow: 'hidden',
+              backgroundColor: '#eee',
+              width: 100,
+              height: 100,
+              marginTop: -50,
+              alignSelf: 'center',
+            }}
+            onPress={pickImage}
+          >
+            <Image
+              source={profileImageUrl ? { uri: profileImageUrl } : require('@/assets/images/image.png')}
+              style={{ width: 100, height: 100, borderRadius: 50 }}
+              resizeMode="cover"
+            />
           </Pressable>
           {profileImageUrl && (
             <Text style={{ fontSize: 10, color: 'gray', marginTop: 4 }}>{profileImageUrl}</Text>

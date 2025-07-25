@@ -1,13 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Pressable, Alert, ActivityIndicator, Platform,
-  TextInput, Image, Modal, KeyboardAvoidingView
+  TextInput, Image, Modal, KeyboardAvoidingView, ScrollView
 } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useMemberSubscriptions } from '@/hooks/useMemberSubscriptions';
+
+interface Club {
+  id: string;
+  name: string;
+  description: string;
+  profile_image_url: string | null;
+}
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
@@ -18,10 +27,46 @@ export default function ProfileScreen() {
   const [tempName, setTempName] = useState('');
   const [tempDescription, setTempDescription] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
+  const [subscriptionCount, setSubscriptionCount] = useState(0);
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const { hostIds, loading: loadingClubs } = useMemberSubscriptions();
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  const fetchSubscriptionCount = useCallback(async (userId: string) => {
+    const { count, error } = await supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('member_id', userId);
+    if (!error && typeof count === 'number') {
+      setSubscriptionCount(count);
+    } else {
+      setSubscriptionCount(0);
+    }
+  }, []);
 
   useEffect(() => {
     fetchUserProfile();
   }, []);
+
+  useEffect(() => {
+    const fetchClubs = async () => {
+      if (hostIds.length === 0) {
+        setClubs([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, name, description, profile_image_url')
+        .in('id', hostIds);
+      if (!error && data) {
+        setClubs(data);
+      } else {
+        setClubs([]);
+      }
+    };
+    fetchClubs();
+  }, [hostIds]);
 
   const fetchUserProfile = async () => {
     try {
@@ -42,7 +87,9 @@ export default function ProfileScreen() {
       }
       setName(profileData.name || 'Name');
       setDescription(profileData.description || 'Description');
-      setProfileImageUrl(profileData.profile_image_url);
+      setProfileImageUrl(profileData.profile_image_url ? profileData.profile_image_url + '?t=' + Date.now() : null);
+      setBackgroundImageUrl(profileData.background_image_url ? profileData.background_image_url + '?t=' + Date.now() : null);
+      fetchSubscriptionCount(user.id);
     } catch (error) {
       Alert.alert('Error', 'Failed to load profile');
     } finally {
@@ -84,6 +131,28 @@ export default function ProfileScreen() {
     }
   };
 
+  const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dgmcfhlkc/image/upload';
+  const CLOUDINARY_PRESET = 'user_uploads';
+
+  const uploadToCloudinary = async (uri: string) => {
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    const data = new FormData();
+    data.append('file', `data:image/jpeg;base64,${base64}`);
+    data.append('upload_preset', CLOUDINARY_PRESET);
+    // folder is set in preset, but you can add: data.append('folder', 'profile_pics');
+
+    const res = await fetch(CLOUDINARY_URL, {
+      method: 'POST',
+      body: data,
+    });
+    const result = await res.json();
+    if (result.secure_url) {
+      return result.secure_url;
+    } else {
+      throw new Error('Cloudinary upload failed');
+    }
+  };
+
   const uploadImage = async (uri: string) => {
     try {
       setSaving(true);
@@ -92,29 +161,62 @@ export default function ProfileScreen() {
         Alert.alert('Error', 'User not found');
         return;
       }
-      const fileName = `profile-${user.id}-${Date.now()}.jpg`;
-      // Read file as base64
-      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-      const fileBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      const { error: uploadError } = await supabase.storage
-        .from('profile-images')
-        .upload(fileName, fileBytes, { contentType: 'image/jpeg', upsert: true });
-      if (uploadError) {
-        Alert.alert('Error', 'Failed to upload image');
-        return;
-      }
-      const { data: urlData } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(fileName);
-      setProfileImageUrl(urlData.publicUrl);
+      const cloudinaryUrl = await uploadToCloudinary(uri);
+      setProfileImageUrl(cloudinaryUrl + '?t=' + Date.now());
       await supabase
         .from('users')
         .update({ 
-          profile_image_url: urlData.publicUrl,
+          profile_image_url: cloudinaryUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
       Alert.alert('Success', 'Profile image updated!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to upload image');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const pickBackgroundImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please grant permission to access your photo library');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [3, 2],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        await uploadBackgroundImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const uploadBackgroundImage = async (uri: string) => {
+    try {
+      setSaving(true);
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        Alert.alert('Error', 'User not found');
+        return;
+      }
+      const cloudinaryUrl = await uploadToCloudinary(uri);
+      setBackgroundImageUrl(cloudinaryUrl + '?t=' + Date.now());
+      await supabase
+        .from('users')
+        .update({ 
+          background_image_url: cloudinaryUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      Alert.alert('Success', 'Background image updated!');
     } catch (error) {
       Alert.alert('Error', 'Failed to upload image');
     } finally {
@@ -169,90 +271,135 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.mainContainer}>
-      {/* Header with Chats button */}
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', padding: 16 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start', minHeight: '100%' }}>
+      {/* Top bar with Settings and Chats buttons */}
+      <View style={{ position: 'absolute', top: 40, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18 }}>
+        <Pressable onPress={() => setShowSettingsModal(true)} style={{ padding: 8 }}>
+          <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#222B45' }} />
+        </Pressable>
         <Pressable onPress={() => router.push('/chats')} style={{ padding: 8 }}>
           <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
         </Pressable>
       </View>
-      <View style={styles.container}>
-        {/* Profile Image */}
-        <Pressable style={[styles.circularFrame, { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }]} onPress={pickImage}>
-          {profileImageUrl ? (
-            <Image source={{ uri: profileImageUrl }} style={[styles.profileImage, { width: 120, height: 120, borderRadius: 60 }]} resizeMode="cover" />
-          ) : (
-            <Text style={styles.addImageText}>+</Text>
-          )}
+      {/* Background image with overlayed profile info */}
+      <View style={{ position: 'relative', height: 320, width: '100%' }}>
+        <Image
+          source={backgroundImageUrl ? { uri: backgroundImageUrl } : require('@/assets/images/image.png')}
+          style={{ width: '100%', height: 320, position: 'absolute' }}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0)']}
+          style={{ position: 'absolute', width: '100%', height: 320 }}
+        />
+        <Pressable
+          onPress={pickBackgroundImage}
+          style={{ position: 'absolute', width: '100%', height: 320, zIndex: 2 }}
+        >
+          {/* Empty: just for pressable area */}
         </Pressable>
-        {/* Name */}
-        <Text style={styles.namePlaceholder}>{name}</Text>
-        {/* Description */}
-        <Text style={styles.descriptionPlaceholder} numberOfLines={3} ellipsizeMode="tail">{description}</Text>
-        {/* Buttons Row */}
-        <View style={styles.buttonRow}>
-          <Pressable style={styles.editButton} onPress={openEditModal}>
-            <Text style={styles.editButtonText}>Edit Profile</Text>
+        <View style={{ position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
+          <Pressable
+            style={{
+              borderRadius: 50,
+              borderWidth: 4,
+              borderColor: '#fff',
+              overflow: 'hidden',
+              backgroundColor: '#eee',
+              width: 100,
+              height: 100,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={pickImage}
+          >
+            <Image
+              source={profileImageUrl ? { uri: profileImageUrl } : require('@/assets/images/image.png')}
+              style={{ width: 100, height: 100, borderRadius: 50 }}
+              resizeMode="cover"
+            />
           </Pressable>
-          <Pressable style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Log Out</Text>
-          </Pressable>
+          <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#fff', marginTop: 12 }}>{name}</Text>
+          <Text style={{ fontSize: 16, color: '#E0E7FF', marginBottom: 8, textAlign: 'center', maxWidth: 320 }}>{description}</Text>
+          <View style={{ backgroundColor: '#fff', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 32, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, alignItems: 'center', marginTop: 8 }}>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#222B45' }}>{subscriptionCount}</Text>
+            <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>Subscriptions</Text>
+          </View>
         </View>
       </View>
-      {/* Edit Profile Modal */}
-      <Modal visible={showEditModal} animationType="slide" transparent>
-        <KeyboardAvoidingView 
-          style={styles.modalOverlay} 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={styles.modalCenterWrap}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <Text style={styles.inputLabel}>Name</Text>
-              <TextInput
-                style={styles.input}
-                value={tempName}
-                onChangeText={setTempName}
-                placeholder="Enter your name"
-                placeholderTextColor="#888"
-                returnKeyType="next"
+      {/* My Clubs section */}
+      <View style={{ marginTop: 24, paddingHorizontal: 20 }}>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#222B45', marginBottom: 12 }}>My Clubs</Text>
+        {loadingClubs ? (
+          <ActivityIndicator size="small" color="#00b2a9" />
+        ) : clubs.length === 0 ? (
+          <Text style={{ color: '#888', fontSize: 16 }}>You have not joined any clubs yet.</Text>
+        ) : (
+          clubs.map(club => (
+            <View key={club.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, marginBottom: 14, padding: 14, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 1 }}>
+              <Image
+                source={club.profile_image_url ? { uri: club.profile_image_url } : require('@/assets/images/image.png')}
+                style={{ width: 48, height: 48, borderRadius: 12, marginRight: 16 }}
+                resizeMode="cover"
               />
-              <Text style={styles.inputLabel}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={tempDescription}
-                onChangeText={setTempDescription}
-                placeholder="Enter your description"
-                placeholderTextColor="#888"
-                multiline
-                numberOfLines={3}
-                returnKeyType="done"
-                blurOnSubmit={true}
-              />
-              <View style={styles.modalButtonsRow}>
-                <Pressable 
-                  style={[styles.modalButton, styles.cancelButton]} 
-                  onPress={() => setShowEditModal(false)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable 
-                  style={[styles.modalButton, styles.saveButton, saving && styles.saveButtonDisabled]} 
-                  onPress={saveProfile}
-                  disabled={saving}
-                >
-                  <Text style={styles.saveButtonText}>
-                    {saving ? 'Saving...' : 'Save'}
-                  </Text>
-                </Pressable>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#222B45' }}>{club.name}</Text>
+                <Text style={{ fontSize: 14, color: '#6B7280' }} numberOfLines={1} ellipsizeMode="tail">{club.description}</Text>
               </View>
             </View>
+          ))
+        )}
+      </View>
+      {/* Settings Modal */}
+      <Modal visible={showSettingsModal} animationType="fade" transparent onRequestClose={() => setShowSettingsModal(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-start' }} onPress={() => setShowSettingsModal(false)}>
+          <View style={{ marginTop: 80, marginLeft: 20, backgroundColor: '#fff', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 24, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 }}>
+            <Pressable onPress={() => { setShowSettingsModal(false); setShowEditModal(true); }} style={{ paddingVertical: 10 }}>
+              <Text style={{ fontSize: 18, color: '#222B45', fontWeight: 'bold' }}>Edit Profile</Text>
+            </Pressable>
+            <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 6 }} />
+            <Pressable onPress={() => { setShowSettingsModal(false); handleLogout(); }} style={{ paddingVertical: 10 }}>
+              <Text style={{ fontSize: 18, color: '#FF4444', fontWeight: 'bold' }}>Log Out</Text>
+            </Pressable>
           </View>
-        </KeyboardAvoidingView>
+        </Pressable>
       </Modal>
-    </View>
+      {/* Edit Profile Modal */}
+      <Modal visible={showEditModal} animationType="fade" transparent onRequestClose={() => setShowEditModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
+            <TextInput
+              style={styles.input}
+              value={tempName}
+              onChangeText={setTempName}
+              placeholder="Name"
+              placeholderTextColor="#666"
+            />
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={tempDescription}
+              onChangeText={setTempDescription}
+              placeholder="Description"
+              placeholderTextColor="#666"
+              multiline
+              numberOfLines={4}
+            />
+            <View style={styles.modalButtonsRow}>
+              <Pressable style={[styles.modalButton, styles.cancelButton]} onPress={() => setShowEditModal(false)}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={[styles.modalButton, styles.saveButton]} onPress={saveProfile}>
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+    </ScrollView>
   );
 }
+  
 
 const styles = StyleSheet.create({
   mainContainer: {
