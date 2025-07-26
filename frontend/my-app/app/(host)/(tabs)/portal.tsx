@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Pressable, Alert, ActivityIndicator, Platform,
-  TextInput, Image, Modal, ScrollView, KeyboardAvoidingView, FlatList, Dimensions
+  TextInput, Image, Modal, ScrollView, KeyboardAvoidingView, FlatList, Dimensions, TouchableOpacity
 } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
 import * as ImagePicker from 'expo-image-picker';
 import MapView, { Marker, Region, MapPressEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as FileSystem from 'expo-file-system';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AnalyticsModal } from './analytics';
 
 const { width } = Dimensions.get('window');
 
@@ -54,6 +55,8 @@ export default function PortalScreen() {
   const [mapRegion, setMapRegion] = useState<Region | undefined>(undefined);
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const [role, setRole] = useState('member');
+  const router = useRouter();
+  const [analyticsVisible, setAnalyticsVisible] = useState(false);
 
   useEffect(() => {
     fetchUserProfile();
@@ -337,10 +340,13 @@ export default function PortalScreen() {
   return (
     <View style={styles.mainContainer}>
       {/* Header with Chats button */}
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', padding: 16 }}>
-        <Pressable onPress={() => router.push('/chats')} style={{ padding: 8 }}>
-          <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
-        </Pressable>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 16 }}>
+        <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/(host)/chats_important')}>
+          <Text style={styles.iconText}>💬</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconButton} onPress={() => setAnalyticsVisible(true)}>
+          <Text style={styles.iconText}>📊</Text>
+        </TouchableOpacity>
       </View>
       <ScrollView 
         style={styles.scrollView}
@@ -628,6 +634,11 @@ export default function PortalScreen() {
             </Pressable>
           </View>
         </View>
+      </Modal>
+
+      {/* Analytics Modal */}
+      <Modal visible={analyticsVisible} animationType="slide" onRequestClose={() => setAnalyticsVisible(false)}>
+        <AnalyticsModal onClose={() => setAnalyticsVisible(false)} />
       </Modal>
     </View>
   );
@@ -1087,6 +1098,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
+  },
+  iconButton: {
+    marginLeft: 12,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  iconText: {
+    fontSize: 22,
   },
 });
  
