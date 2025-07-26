@@ -139,8 +139,7 @@ export default function ProfileScreen() {
     const data = new FormData();
     data.append('file', `data:image/jpeg;base64,${base64}`);
     data.append('upload_preset', CLOUDINARY_PRESET);
-    // folder is set in preset, but you can add: data.append('folder', 'profile_pics');
-
+    data.append('folder', 'profile_pics'); // Ensure all images go to the same folder
     const res = await fetch(CLOUDINARY_URL, {
       method: 'POST',
       body: data,
@@ -271,132 +270,148 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start', minHeight: '100%' }}>
-      {/* Top bar with Settings and Chats buttons */}
-      <View style={{ position: 'absolute', top: 40, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18 }}>
-        <Pressable onPress={() => setShowSettingsModal(true)} style={{ padding: 8 }}>
-          <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#222B45' }} />
-        </Pressable>
-        <Pressable onPress={() => router.push('/chats')} style={{ padding: 8 }}>
-          <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
-        </Pressable>
-      </View>
-      {/* Background image with overlayed profile info */}
-      <View style={{ position: 'relative', height: 320, width: '100%' }}>
-        <Image
-          source={backgroundImageUrl ? { uri: backgroundImageUrl } : require('@/assets/images/image.png')}
-          style={{ width: '100%', height: 320, position: 'absolute' }}
-          resizeMode="cover"
-        />
-        <LinearGradient
-          colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0)']}
-          style={{ position: 'absolute', width: '100%', height: 320 }}
-        />
-        <Pressable
-          onPress={pickBackgroundImage}
-          style={{ position: 'absolute', width: '100%', height: 320, zIndex: 2 }}
-        >
-          {/* Empty: just for pressable area */}
-        </Pressable>
-        <View style={{ position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
-          <Pressable
-            style={{
-              borderRadius: 50,
-              borderWidth: 4,
-              borderColor: '#fff',
-              overflow: 'hidden',
-              backgroundColor: '#eee',
-              width: 100,
-              height: 100,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onPress={pickImage}
-          >
-            <Image
-              source={profileImageUrl ? { uri: profileImageUrl } : require('@/assets/images/image.png')}
-              style={{ width: 100, height: 100, borderRadius: 50 }}
-              resizeMode="cover"
-            />
+    <LinearGradient colors={['#1A237E', '#222B45', '#0A0F2C']} style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start', minHeight: '100%' }}>
+        {/* Top bar with Settings and Chats buttons */}
+        <View style={{ position: 'absolute', top: 40, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18 }}>
+          <Pressable onPress={() => setShowSettingsModal(true)} style={{ padding: 8 }}>
+            <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#222B45' }} />
           </Pressable>
-          <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#fff', marginTop: 12 }}>{name}</Text>
-          <Text style={{ fontSize: 16, color: '#E0E7FF', marginBottom: 8, textAlign: 'center', maxWidth: 320 }}>{description}</Text>
-          <View style={{ backgroundColor: '#fff', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 32, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, alignItems: 'center', marginTop: 8 }}>
-            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#222B45' }}>{subscriptionCount}</Text>
-            <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>Subscriptions</Text>
-          </View>
+          <Pressable onPress={() => router.push('/chats')} style={{ padding: 8 }}>
+            <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
+          </Pressable>
         </View>
-      </View>
-      {/* My Clubs section */}
-      <View style={{ marginTop: 24, paddingHorizontal: 20 }}>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#222B45', marginBottom: 12 }}>My Clubs</Text>
-        {loadingClubs ? (
-          <ActivityIndicator size="small" color="#00b2a9" />
-        ) : clubs.length === 0 ? (
-          <Text style={{ color: '#888', fontSize: 16 }}>You have not joined any clubs yet.</Text>
-        ) : (
-          clubs.map(club => (
-            <View key={club.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, marginBottom: 14, padding: 14, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 1 }}>
+        {/* Background image with overlayed profile info */}
+        <View style={{ position: 'relative', height: 320, width: '100%' }}>
+          <Image
+            source={backgroundImageUrl ? { uri: backgroundImageUrl } : require('@/assets/images/image.png')}
+            style={{ width: '100%', height: 320, position: 'absolute' }}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0)']}
+            style={{ position: 'absolute', width: '100%', height: 320 }}
+          />
+          <Pressable
+            onPress={pickBackgroundImage}
+            style={{ position: 'absolute', width: '100%', height: 320, zIndex: 5 }}
+          >
+            {/* Empty: just for pressable area */}
+          </Pressable>
+          <View style={{ position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
+            <Pressable
+              style={{
+                borderRadius: 50,
+                borderWidth: 4,
+                borderColor: '#fff',
+                overflow: 'hidden',
+                backgroundColor: '#eee',
+                width: 100,
+                height: 100,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={pickImage}
+            >
               <Image
-                source={club.profile_image_url ? { uri: club.profile_image_url } : require('@/assets/images/image.png')}
-                style={{ width: 48, height: 48, borderRadius: 12, marginRight: 16 }}
+                source={profileImageUrl ? { uri: profileImageUrl } : require('@/assets/images/image.png')}
+                style={{ width: 100, height: 100, borderRadius: 50 }}
                 resizeMode="cover"
               />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#222B45' }}>{club.name}</Text>
-                <Text style={{ fontSize: 14, color: '#6B7280' }} numberOfLines={1} ellipsizeMode="tail">{club.description}</Text>
+            </Pressable>
+            <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#fff', marginTop: 12 }}>{name}</Text>
+            <Text style={{ fontSize: 16, color: '#E0E7FF', marginBottom: 8, textAlign: 'center', maxWidth: 320 }}>{description}</Text>
+            <View style={{ backgroundColor: '#fff', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 32, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, alignItems: 'center', marginTop: 8 }}>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#222B45' }}>{subscriptionCount}</Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>Subscriptions</Text>
+            </View>
+          </View>
+        </View>
+        {/* My Clubs section */}
+        <View style={{ marginTop: 24, paddingHorizontal: 20 }}>
+          <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#fff', marginBottom: 16 }}>My Clubs</Text>
+          {loadingClubs ? (
+            <ActivityIndicator size="small" color="#C6FFF6" />
+          ) : clubs.length === 0 ? (
+            <Text style={{ color: '#E0E7FF', fontSize: 16 }}>You have not joined any clubs yet.</Text>
+          ) : (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 16 }}>
+              {clubs.map(club => (
+                <View key={club.id} style={{
+                  width: 160,
+                  height: 180,
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  borderRadius: 22,
+                  marginBottom: 16,
+                  marginRight: 12,
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  shadowColor: '#000',
+                  shadowOpacity: 0.08,
+                  shadowRadius: 8,
+                  elevation: 2,
+                  padding: 14,
+                }}>
+                  <Image
+                    source={club.profile_image_url ? { uri: club.profile_image_url } : require('@/assets/images/image.png')}
+                    style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 10, marginTop: 2, backgroundColor: '#eee' }}
+                    resizeMode="cover"
+                  />
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#222B45', textAlign: 'center', marginBottom: 4 }} numberOfLines={2}>{club.name}</Text>
+                  <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center' }} numberOfLines={2} ellipsizeMode="tail">{club.description}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+        {/* Settings Modal */}
+        <Modal visible={showSettingsModal} animationType="fade" transparent onRequestClose={() => setShowSettingsModal(false)}>
+          <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-start' }} onPress={() => setShowSettingsModal(false)}>
+            <View style={{ marginTop: 80, marginLeft: 20, backgroundColor: '#fff', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 24, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 }}>
+              <Pressable onPress={() => { setShowSettingsModal(false); setShowEditModal(true); }} style={{ paddingVertical: 10 }}>
+                <Text style={{ fontSize: 18, color: '#222B45', fontWeight: 'bold' }}>Edit Profile</Text>
+              </Pressable>
+              <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 6 }} />
+              <Pressable onPress={() => { setShowSettingsModal(false); handleLogout(); }} style={{ paddingVertical: 10 }}>
+                <Text style={{ fontSize: 18, color: '#FF4444', fontWeight: 'bold' }}>Log Out</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Modal>
+        {/* Edit Profile Modal */}
+        <Modal visible={showEditModal} animationType="fade" transparent onRequestClose={() => setShowEditModal(false)}>
+          <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TextInput
+                style={styles.input}
+                value={tempName}
+                onChangeText={setTempName}
+                placeholder="Name"
+                placeholderTextColor="#666"
+              />
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={tempDescription}
+                onChangeText={setTempDescription}
+                placeholder="Description"
+                placeholderTextColor="#666"
+                multiline
+                numberOfLines={4}
+              />
+              <View style={styles.modalButtonsRow}>
+                <Pressable style={[styles.modalButton, styles.cancelButton]} onPress={() => setShowEditModal(false)}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable style={[styles.modalButton, styles.saveButton]} onPress={saveProfile}>
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </Pressable>
               </View>
             </View>
-          ))
-        )}
-      </View>
-      {/* Settings Modal */}
-      <Modal visible={showSettingsModal} animationType="fade" transparent onRequestClose={() => setShowSettingsModal(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-start' }} onPress={() => setShowSettingsModal(false)}>
-          <View style={{ marginTop: 80, marginLeft: 20, backgroundColor: '#fff', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 24, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 }}>
-            <Pressable onPress={() => { setShowSettingsModal(false); setShowEditModal(true); }} style={{ paddingVertical: 10 }}>
-              <Text style={{ fontSize: 18, color: '#222B45', fontWeight: 'bold' }}>Edit Profile</Text>
-            </Pressable>
-            <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 6 }} />
-            <Pressable onPress={() => { setShowSettingsModal(false); handleLogout(); }} style={{ paddingVertical: 10 }}>
-              <Text style={{ fontSize: 18, color: '#FF4444', fontWeight: 'bold' }}>Log Out</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
-      {/* Edit Profile Modal */}
-      <Modal visible={showEditModal} animationType="fade" transparent onRequestClose={() => setShowEditModal(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Profile</Text>
-            <TextInput
-              style={styles.input}
-              value={tempName}
-              onChangeText={setTempName}
-              placeholder="Name"
-              placeholderTextColor="#666"
-            />
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={tempDescription}
-              onChangeText={setTempDescription}
-              placeholder="Description"
-              placeholderTextColor="#666"
-              multiline
-              numberOfLines={4}
-            />
-            <View style={styles.modalButtonsRow}>
-              <Pressable style={[styles.modalButton, styles.cancelButton]} onPress={() => setShowEditModal(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.modalButton, styles.saveButton]} onPress={saveProfile}>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
-    </ScrollView>
+          </Pressable>
+        </Modal>
+      </ScrollView>
+    </LinearGradient>
   );
 }
   
@@ -527,7 +542,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent', // Changed from #fff to transparent
     padding: 24,
     borderRadius: 20,
     width: '90%',
@@ -543,14 +558,14 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#fff', // Changed from #333 to #fff
     marginBottom: 18,
     textAlign: 'left',
   },
   inputLabel: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#fff', // Changed from #333 to #fff
     marginBottom: 10,
   },
   input: {

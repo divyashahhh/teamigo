@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 const icons = {
   portal: require('@/assets/icons/homee.png'),
   announce: require('@/assets/icons/megaphone.png'),
-  maps: require('@/assets/icons/high-five.png'), // renamed from matchup
+  analytics: require('@/assets/icons/analytics.png'), 
   merch: require('@/assets/icons/shopping-bag.png'),
   calendar: require('@/assets/icons/calendar.png'),
 };
@@ -62,7 +62,7 @@ export default function HostTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="maps" // renamed from "matchup"
+        name="analytics" // replaced 'maps' with 'analytics'
         options={{
           tabBarIcon: ({ focused }) => (
             <Animated.View
@@ -83,10 +83,10 @@ export default function HostTabsLayout() {
               }}
             >
               <Image
-                source={icons.maps} // renamed from icons.matchup
+                source={icons.analytics}
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: 50,
+                  height: 50,
                   tintColor: '#2BB3B1',
                 }}
               />

@@ -3,6 +3,8 @@ import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, 
 import { useMemberSubscriptions } from '@/hooks/useMemberSubscriptions';
 import { useMemberFeed } from '@/hooks/useMemberFeed';
 import { supabase } from '@/utils/supabaseClient';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 
 export default function MemberAnnouncements() {
   const { hostIds, loading: subsLoading, error: subsError } = useMemberSubscriptions();
@@ -35,61 +37,81 @@ export default function MemberAnnouncements() {
   if (subsError || error) {
     return <View style={styles.center}><Text style={styles.error}>{subsError || error}</Text></View>;
   }
-
   return (
-    <View style={{ flex: 1 }}>
-      {/* Filter Button */}
-      <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)}>
-        <Text style={styles.filterButtonText}>Filter</Text>
-      </TouchableOpacity>
-      {/* Show selected org */}
-      {selectedOrg && (
-        <View style={styles.selectedOrgBar}>
-          <Text style={styles.selectedOrgText}>
-            Showing: {orgs.find(o => o.id === selectedOrg)?.name || 'Organisation'}
-          </Text>
-          <Pressable onPress={() => setSelectedOrg(null)}>
-            <Text style={styles.clearFilterText}>Clear Filter</Text>
-          </Pressable>
-        </View>
-      )}
-      <FlatList
-        data={filteredAnnouncements}
-        keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.desc}>{item.description}</Text>
-            <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
+    <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        {/* Filter Button */}
+        <TouchableOpacity style={[styles.filterButton, { backgroundColor: '#222B45' }]} onPress={() => setFilterModalVisible(true)}>
+          <Text style={[styles.filterButtonText, { color: '#fff' }]}>Filter</Text>
+        </TouchableOpacity>
+        {/* Show selected org */}
+        {selectedOrg && (
+          <View style={[styles.selectedOrgBar, { backgroundColor: 'rgba(255,255,255,0.7)' }] }>
+            <Text style={[styles.selectedOrgText, { color: '#222B45' }] }>
+              Showing: {orgs.find(o => o.id === selectedOrg)?.name || 'Organisation'}
+            </Text>
+            <Pressable onPress={() => setSelectedOrg(null)}>
+              <Text style={[styles.clearFilterText, { color: '#FF4444' }]}>Clear Filter</Text>
+            </Pressable>
           </View>
         )}
-        ListEmptyComponent={<Text style={styles.empty}>No announcements from your subscriptions yet.</Text>}
-      />
-      {/* Modal for org filter */}
-      <Modal visible={filterModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filter by Organisation</Text>
-            {orgs.map(org => (
-              <TouchableOpacity
-                key={org.id}
-                style={[styles.orgOption, selectedOrg === org.id && styles.selectedOrgOption]}
-                onPress={() => {
-                  setSelectedOrg(org.id);
-                  setFilterModalVisible(false);
-                }}
-              >
-                <Text style={styles.orgName}>{org.name}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.closeModalButton} onPress={() => setFilterModalVisible(false)}>
-              <Text style={styles.closeModalText}>Close</Text>
-            </TouchableOpacity>
-          </View>
+        <FlatList
+  data={filteredAnnouncements}
+  keyExtractor={item => item.id}
+  contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+  renderItem={({ item }) => (
+    <View style={[styles.card, { backgroundColor: 'rgba(255,255,255,0.95)', flexDirection: 'row', alignItems: 'center' }]}>
+      {item.image_url ? (
+        <Image
+          source={{ uri: item.image_url }}
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 8,
+            marginRight: 16,
+            backgroundColor: '#eee',
+          }}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.imagePlaceholder}>
+          <Text>📣</Text>
         </View>
-      </Modal>
+      )}
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.title, { color: '#222B45' }]}>{item.title}</Text>
+        <Text style={[styles.desc, { color: '#6B7280' }]}>{item.description}</Text>
+        <Text style={[styles.date, { color: '#888' }]}>{new Date(item.created_at).toLocaleString()}</Text>
+      </View>
     </View>
+  )}
+  ListEmptyComponent={<Text style={[styles.empty, { color: '#888' }]}>No announcements from your subscriptions yet.</Text>}
+/>
+        {/* Modal for org filter */}
+        <Modal visible={filterModalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: 'rgba(255,255,255,0.98)' }] }>
+              <Text style={[styles.modalTitle, { color: '#222B45' }]}>Filter by Organisation</Text>
+              {orgs.map(org => (
+                <TouchableOpacity
+                  key={org.id}
+                  style={[styles.orgOption, selectedOrg === org.id && styles.selectedOrgOption, { backgroundColor: selectedOrg === org.id ? '#EAF0FF' : 'rgba(0,0,0,0.03)' }]}
+                  onPress={() => {
+                    setSelectedOrg(org.id);
+                    setFilterModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.orgName, { color: '#222B45' }]}>{org.name}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.closeModalButton} onPress={() => setFilterModalVisible(false)}>
+                <Text style={[styles.closeModalText, { color: '#FF4444' }]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </LinearGradient>
   );
 }
 
@@ -198,5 +220,14 @@ const styles = StyleSheet.create({
   closeModalText: {
     color: '#333',
     fontSize: 16,
+  },
+  imagePlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    marginRight: 16,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

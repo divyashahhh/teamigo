@@ -3,12 +3,26 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView,
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
+import * as FileSystem from 'expo-file-system';
 
 const questionTypes = [
   { label: 'Short Answer', value: 'short' },
   { label: 'Number', value: 'number' },
   { label: 'MCQ', value: 'mcq' },
 ];
+
+const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dgmcfhlkc/image/upload';
+const CLOUDINARY_PRESET = 'user_uploads';
+const uploadToCloudinary = async (uri: string, folder: string) => {
+  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+  const data = new FormData();
+  data.append('file', `data:image/jpeg;base64,${base64}`);
+  data.append('upload_preset', CLOUDINARY_PRESET);
+  data.append('folder', folder);
+  const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: data });
+  const result = await res.json();
+  if (result.secure_url) { return result.secure_url; } else { throw new Error('Cloudinary upload failed'); }
+};
 
 export default function MerchSetupScreen() {
   const router = useRouter();
@@ -70,31 +84,11 @@ export default function MerchSetupScreen() {
       if (!user) throw new Error('User not found');
       let imageUrl = null;
       if (image) {
-        const response = await fetch(image);
-        const blob = await response.blob();
-        const fileName = `merch-${user.id}-${Date.now()}.jpg`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('merch-images')
-          .upload(fileName, blob);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage
-          .from('merch-images')
-          .getPublicUrl(fileName);
-        imageUrl = urlData.publicUrl;
+        imageUrl = await uploadToCloudinary(image, 'merch_images');
       }
       let paymentDetails: any = {};
       if (paymentOption === 'qr' && qrImage) {
-        const response = await fetch(qrImage);
-        const blob = await response.blob();
-        const fileName = `qr-${user.id}-${Date.now()}.jpg`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('merch-images')
-          .upload(fileName, blob);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage
-          .from('merch-images')
-          .getPublicUrl(fileName);
-        paymentDetails.qr_url = urlData.publicUrl;
+        paymentDetails.qr_url = await uploadToCloudinary(qrImage, 'merch_qr_images');
       }
       if (paymentOption === 'number' && phoneNumber) {
         paymentDetails.phone = phoneNumber;

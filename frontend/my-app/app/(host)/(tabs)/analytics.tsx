@@ -67,12 +67,7 @@ export function AnalyticsModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-        <Text style={styles.closeButtonText}>✕ Close</Text>
-      </TouchableOpacity>
       <ScrollView contentContainerStyle={{ padding: 24 }}>
-        <Text style={styles.title}>📊 Analytics</Text>
         {loading ? (
           <ActivityIndicator color="#00b2a9" />
         ) : (
@@ -132,7 +127,6 @@ export function AnalyticsModal({ onClose }: { onClose: () => void }) {
           <View style={styles.statRow}><Text style={styles.statLabel}>Best Month:</Text><Text style={styles.statValue}>{dummyStats.bestMonth}</Text></View>
         </View>
       </ScrollView>
-    </View>
   );
 }
 
@@ -200,4 +194,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1C2A67',
   },
-}); 
+});
+
+export default function AnalyticsScreen() {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+      <ScrollView contentContainerStyle={{ padding: 24 }}>
+        <Text style={styles.title}>📊 Analytics</Text>
+        <AnalyticsModal onClose={() => {}} />
+      </ScrollView>
+    </View>
+  );
+}

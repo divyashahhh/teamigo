@@ -18,6 +18,7 @@ import { BlurView } from 'expo-blur';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -314,259 +315,261 @@ const CalendarPage = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }], opacity: headerOpacity }]}>
-        <Text style={styles.monthText}>{currentMonth}</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </Animated.View>
+    <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }], opacity: headerOpacity }]}>
+          <Text style={styles.monthText}>{currentMonth}</Text>
+          <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
+        </Animated.View>
 
-      <Animated.ScrollView
-        style={styles.scrollView}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
-        scrollEventThrottle={16}
-      >
-        <Calendar
-          onDayPress={handleDayPress}
-          markedDates={markedDates}
-          style={styles.calendar}
-          theme={{
-            backgroundColor: COLORS.background,
-            calendarBackground: COLORS.background,
-            textSectionTitleColor: COLORS.subtitle,
-            selectedDayBackgroundColor: 'transparent',
-            selectedDayTextColor: COLORS.text,
-            todayTextColor: COLORS.primary,
-            dayTextColor: COLORS.text,
-            textDisabledColor: COLORS.muted,
-            monthTextColor: COLORS.text,
-            textMonthFontSize: 16,
-            textMonthFontWeight: '600',
-            arrowColor: COLORS.primary,
-          }}
-          dayComponent={({ date }) => renderDay(date)}
-        />
-
-        <View style={styles.eventListContainer}>
-          <Text style={styles.sectionTitle}>Events</Text>
-          {selectedDate ? (
-            eventsByDate[selectedDate]?.map((event) => (
-              <TouchableOpacity
-                key={event.id}
-                style={[
-                  styles.eventCard,
-                  { borderLeftColor: event.color },
-                  selectMode && selectedIds.includes(event.id) && { borderColor: COLORS.primary, borderWidth: 2 }
-                ]}
-                onPress={selectMode ? () => handleSelectEvent(event.id) : () => {
-                  setSelectedEventId(event.id);
-                  setEventText(event.text);
-                  setEditEventDescription(event.description || '');
-                  setSelectedColor(event.color);
-                  setEditModalVisible(true);
-                }}
-                onLongPress={() => handleLongPressEvent(event.id)}
-                disabled={isLoading}
-              >
-                <View style={styles.eventContent}>
-                  <Text style={styles.eventTitle}>{event.text}</Text>
-                  {event.description ? (
-                    <Text style={styles.eventDescription}>{event.description}</Text>
-                  ) : null}
-                  <Text style={styles.eventTime}>All day</Text>
-                </View>
-                <View style={[styles.eventDot, { backgroundColor: event.color }]} />
-                {selectMode && (
-                  <View style={styles.checkboxCircle}>
-                    {selectedIds.includes(event.id) && <View style={styles.checkboxInner} />}
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>Select a date to view or add events</Text>
+        <Animated.ScrollView
+          style={styles.scrollView}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
           )}
-        </View>
-      </Animated.ScrollView>
+          scrollEventThrottle={16}
+        >
+          <Calendar
+            onDayPress={handleDayPress}
+            markedDates={markedDates}
+            style={styles.calendar}
+            theme={{
+              backgroundColor: COLORS.background,
+              calendarBackground: COLORS.background,
+              textSectionTitleColor: COLORS.subtitle,
+              selectedDayBackgroundColor: 'transparent',
+              selectedDayTextColor: COLORS.text,
+              todayTextColor: COLORS.primary,
+              dayTextColor: COLORS.text,
+              textDisabledColor: COLORS.muted,
+              monthTextColor: COLORS.text,
+              textMonthFontSize: 16,
+              textMonthFontWeight: '600',
+              arrowColor: COLORS.primary,
+            }}
+            dayComponent={({ date }) => renderDay(date)}
+          />
 
-      {/* Add Event Modal */}
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalWrapper}>
-          <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>New Event</Text>
-            <TextInput
-              placeholder="Event title"
-              value={eventText}
-              onChangeText={setEventText}
-              style={styles.input}
-              placeholderTextColor={COLORS.muted}
-            />
-            <TextInput
-              placeholder="Description (optional)"
-              value={eventDescription}
-              onChangeText={setEventDescription}
-              style={styles.input}
-              placeholderTextColor={COLORS.muted}
-            />
-            <Text style={styles.colorLabel}>Event Category</Text>
-            <View style={styles.colorGrid}>
-              {colorOptions.map(({ color, label }) => (
+          <View style={styles.eventListContainer}>
+            <Text style={styles.sectionTitle}>Events</Text>
+            {selectedDate ? (
+              eventsByDate[selectedDate]?.map((event) => (
                 <TouchableOpacity
-                  key={color}
-                  onPress={() => setSelectedColor(color)}
-                  style={styles.colorOption}
+                  key={event.id}
+                  style={[
+                    styles.eventCard,
+                    { borderLeftColor: event.color },
+                    selectMode && selectedIds.includes(event.id) && { borderColor: COLORS.primary, borderWidth: 2 }
+                  ]}
+                  onPress={selectMode ? () => handleSelectEvent(event.id) : () => {
+                    setSelectedEventId(event.id);
+                    setEventText(event.text);
+                    setEditEventDescription(event.description || '');
+                    setSelectedColor(event.color);
+                    setEditModalVisible(true);
+                  }}
+                  onLongPress={() => handleLongPressEvent(event.id)}
+                  disabled={isLoading}
                 >
-                  <View style={[styles.colorDot, { backgroundColor: color }]} />
-                  <Text style={[styles.colorLabel, selectedColor === color && styles.selectedColorLabel]}>
-                    {label}
-                  </Text>
+                  <View style={styles.eventContent}>
+                    <Text style={styles.eventTitle}>{event.text}</Text>
+                    {event.description ? (
+                      <Text style={styles.eventDescription}>{event.description}</Text>
+                    ) : null}
+                    <Text style={styles.eventTime}>All day</Text>
+                  </View>
+                  <View style={[styles.eventDot, { backgroundColor: event.color }]} />
+                  {selectMode && (
+                    <View style={styles.checkboxCircle}>
+                      {selectedIds.includes(event.id) && <View style={styles.checkboxInner} />}
+                    </View>
+                  )}
                 </TouchableOpacity>
-              ))}
+              ))
+            ) : (
+              <Text style={styles.emptyText}>Select a date to view or add events</Text>
+            )}
+          </View>
+        </Animated.ScrollView>
+
+        {/* Add Event Modal */}
+        <Modal visible={modalVisible} animationType="slide" transparent>
+          <View style={styles.modalWrapper}>
+            <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>New Event</Text>
+              <TextInput
+                placeholder="Event title"
+                value={eventText}
+                onChangeText={setEventText}
+                style={styles.input}
+                placeholderTextColor={COLORS.muted}
+              />
+              <TextInput
+                placeholder="Description (optional)"
+                value={eventDescription}
+                onChangeText={setEventDescription}
+                style={styles.input}
+                placeholderTextColor={COLORS.muted}
+              />
+              <Text style={styles.colorLabel}>Event Category</Text>
+              <View style={styles.colorGrid}>
+                {colorOptions.map(({ color, label }) => (
+                  <TouchableOpacity
+                    key={color}
+                    onPress={() => setSelectedColor(color)}
+                    style={styles.colorOption}
+                  >
+                    <View style={[styles.colorDot, { backgroundColor: color }]} />
+                    <Text style={[styles.colorLabel, selectedColor === color && styles.selectedColorLabel]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton]}
+                  onPress={saveEvent}
+                >
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.modalButtons}>
+          </View>
+        </Modal>
+
+        {/* Edit Event Modal */}
+        <Modal visible={editModalVisible} animationType="slide" transparent>
+          <View style={styles.modalWrapper}>
+            <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
+            <View style={styles.modalContent}>
+              {/* Close button at top right */}
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setModalVisible(false)}
+                style={styles.closeEditButton}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={styles.closeEditButtonText}>×</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Edit Event</Text>
+              <TextInput
+                value={eventText}
+                onChangeText={setEventText}
+                style={styles.input}
+                placeholderTextColor={COLORS.muted}
+              />
+              <TextInput
+                placeholder="Description (optional)"
+                value={editEventDescription}
+                onChangeText={setEditEventDescription}
+                style={styles.input}
+                placeholderTextColor={COLORS.muted}
+              />
+              <Text style={styles.colorLabel}>Event Category</Text>
+              <View style={styles.colorGrid}>
+                {colorOptions.map(({ color, label }) => (
+                  <TouchableOpacity
+                    key={color}
+                    onPress={() => setSelectedColor(color)}
+                    style={styles.colorOption}
+                  >
+                    <View style={[styles.colorDot, { backgroundColor: color }]} />
+                    <Text style={[styles.colorLabel, selectedColor === color && styles.selectedColorLabel]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.deleteButton]}
+                  onPress={() => {
+                    if (!selectedEventId) {
+                      Alert.alert('Error', 'No event selected for deletion.');
+                      return;
+                    }
+                    Alert.alert(
+                      'Delete Event',
+                      'Are you sure you want to delete this event?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: async () => {
+                          await deleteEvent(selectedEventId.toString(), userId || '');
+                          setEditModalVisible(false);
+                        }},
+                      ]
+                    );
+                  }}
+                >
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton]}
+                  onPress={() => {
+                    if (!selectedEventId) {
+                      Alert.alert('Error', 'No event selected for update.');
+                      return;
+                    }
+                    updateEvent(selectedEventId.toString(), {
+                      content: eventText,
+                      color: selectedColor,
+                      description: editEventDescription,
+                    });
+                  }}
+                >
+                  <Text style={styles.saveButtonText}>Update</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton, { marginTop: 8 }]}
+                onPress={() => setEditModalVisible(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={saveEvent}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Modal>
-
-      {/* Edit Event Modal */}
-      <Modal visible={editModalVisible} animationType="slide" transparent>
-        <View style={styles.modalWrapper}>
-          <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
-          <View style={styles.modalContent}>
-            {/* Close button at top right */}
-            <TouchableOpacity
-              style={styles.closeEditButton}
-              onPress={() => setEditModalVisible(false)}
-            >
-              <Text style={styles.closeEditButtonText}>×</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Edit Event</Text>
-            <TextInput
-              value={eventText}
-              onChangeText={setEventText}
-              style={styles.input}
-              placeholderTextColor={COLORS.muted}
-            />
-            <TextInput
-              placeholder="Description (optional)"
-              value={editEventDescription}
-              onChangeText={setEditEventDescription}
-              style={styles.input}
-              placeholderTextColor={COLORS.muted}
-            />
-            <Text style={styles.colorLabel}>Event Category</Text>
-            <View style={styles.colorGrid}>
-              {colorOptions.map(({ color, label }) => (
-                <TouchableOpacity
-                  key={color}
-                  onPress={() => setSelectedColor(color)}
-                  style={styles.colorOption}
-                >
-                  <View style={[styles.colorDot, { backgroundColor: color }]} />
-                  <Text style={[styles.colorLabel, selectedColor === color && styles.selectedColorLabel]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.deleteButton]}
-                onPress={() => {
-                  if (!selectedEventId) {
-                    Alert.alert('Error', 'No event selected for deletion.');
-                    return;
-                  }
-                  Alert.alert(
-                    'Delete Event',
-                    'Are you sure you want to delete this event?',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Delete', style: 'destructive', onPress: async () => {
-                        await deleteEvent(selectedEventId.toString(), userId || '');
-                        setEditModalVisible(false);
-                      }},
-                    ]
-                  );
-                }}
-              >
-                <Text style={styles.deleteButtonText}>Delete</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={() => {
-                  if (!selectedEventId) {
-                    Alert.alert('Error', 'No event selected for update.');
-                    return;
-                  }
-                  updateEvent(selectedEventId.toString(), {
-                    content: eventText,
-                    color: selectedColor,
-                    description: editEventDescription,
-                  });
-                }}
-              >
-                <Text style={styles.saveButtonText}>Update</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton, { marginTop: 8 }]}
-              onPress={() => setEditModalVisible(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-      {selectMode && (
-        <TouchableOpacity
-          style={styles.doneButtonScreenEdge}
-          onPress={() => {
-            setSelectMode(false);
-            setSelectedIds([]);
-          }}
-        >
-          <Text style={styles.doneButtonText}>Done</Text>
-        </TouchableOpacity>
-      )}
-      <View style={styles.fabRow}>
-        {selectMode ? (
+        </Modal>
+        {selectMode && (
           <TouchableOpacity
-            style={[styles.fab, styles.deleteFab]}
-            onPress={confirmAndDeleteEvents}
-            activeOpacity={0.8}
+            style={styles.doneButtonScreenEdge}
+            onPress={() => {
+              setSelectMode(false);
+              setSelectedIds([]);
+            }}
           >
-            <Text style={styles.fabCross}>×</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => setModalVisible(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.fabPlus}>+</Text>
+            <Text style={styles.doneButtonText}>Done</Text>
           </TouchableOpacity>
         )}
+        <View style={styles.fabRow}>
+          {selectMode ? (
+            <TouchableOpacity
+              style={[styles.fab, styles.deleteFab]}
+              onPress={confirmAndDeleteEvents}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.fabCross}>×</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.fab}
+              onPress={() => setModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.fabPlus}>+</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
