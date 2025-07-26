@@ -7,6 +7,7 @@ import {
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/utils/supabaseClient';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LoginScreen(): React.JSX.Element {
   const [email, setEmail] = useState('');
@@ -102,47 +103,51 @@ export default function LoginScreen(): React.JSX.Element {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Log in to Teamigo</Text>
-        <Text style={styles.subtitle}>Let's get you started</Text>
+    <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title}>Log in to Teamigo</Text>
+          <Text style={styles.subtitle}>Let's get you started</Text>
 
-        <Text style={styles.label}>E-mail</Text>
-        <TextInput
-          placeholder="example@email.com"
-          style={styles.input}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
+          <Text style={styles.label}>E-mail</Text>
+          <TextInput
+            placeholder="example@email.com"
+            style={styles.input}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+            placeholderTextColor="#888"
+          />
 
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          placeholder="Your password"
-          style={styles.input}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            placeholder="Your password"
+            style={styles.input}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            placeholderTextColor="#888"
+          />
 
-        <Pressable style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginText}>Log In</Text>
-        </Pressable>
-
-        <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>Don't have an account? </Text>
-          <Pressable onPress={() => router.push('./signup')}>
-            <Text style={styles.signupLink}>Sign Up</Text>
+          <Pressable style={styles.loginButton} onPress={handleLogin}>
+            <Text style={styles.loginText}>Log In</Text>
           </Pressable>
-        </View>
 
-        <View style={styles.logoContainer}>
-          <Image source={require('@/assets/images/image.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.logoCaption}>powered by Teamigo</Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>Don't have an account? </Text>
+            <Pressable onPress={() => router.push('./signup')}>
+              <Text style={styles.signupLink}>Sign Up</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.logoContainer}>
+            <Image source={require('@/assets/images/image.png')} style={styles.logo} resizeMode="contain" />
+            <Text style={styles.logoCaption}>powered by Teamigo</Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
@@ -151,48 +156,50 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 30,
     paddingTop: Platform.OS === 'android' ? 60 : 80,
-    backgroundColor: '#fff',
+    // Remove backgroundColor here to let LinearGradient show
   },
   title: {
     fontSize: 28,
-    fontWeight: '800',
-    color: '#333',
+    fontWeight: 'bold',
+    color: '#222B45',
     marginBottom: 4,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 18,
+    color: '#6B7280',
     marginBottom: 28,
     textAlign: 'center',
+    fontWeight: '400',
   },
   label: {
     marginBottom: 6,
-    color: '#333',
+    color: '#222B45',
     fontWeight: '600',
     fontSize: 14,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#E0E7FF',
     borderRadius: 14,
     padding: 14,
     fontSize: 16,
-    color: '#333',
-    backgroundColor: '#f9f9f9',
+    color: '#222B45',
+    backgroundColor: '#F3F6FD',
     marginBottom: 14,
   },
   loginButton: {
-    backgroundColor: '#00b2a9',
+    backgroundColor: '#222B45',
     padding: 16,
     borderRadius: 14,
     marginTop: 8,
     marginBottom: 10,
+    alignItems: 'center',
   },
   loginText: {
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
+    fontWeight: 'bold',
+    fontSize: 18,
     textAlign: 'center',
   },
   signupContainer: {
@@ -201,12 +208,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   signupText: {
-    color: '#333',
+    color: '#222B45',
     fontSize: 14,
   },
   signupLink: {
-    color: '#00b2a9',
-    fontWeight: '700',
+    color: '#2B2BFF',
+    fontWeight: 'bold',
     fontSize: 14,
   },
   logoContainer: {
@@ -214,20 +221,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
     marginTop: 40,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: 'rgba(255,255,255,0.7)',
     borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   logo: {
     width: 140,
     height: 50,
   },
   logoCaption: {
-    color: '#666',
+    color: '#6B7280',
     fontSize: 13,
     marginTop: 8,
   },

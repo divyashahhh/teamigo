@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator, Modal, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
+
+interface Purchase {
+  id: string;
+  user: { id: string; name?: string; user_metadata?: any } | null;
+  answers: Record<string, string>;
+  quantity: number;
+  created_at: string;
+}
 
 export default function MerchScreen() {
   const router = useRouter();
@@ -10,6 +18,10 @@ export default function MerchScreen() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedMerch, setSelectedMerch] = useState<any | null>(null); // Use your merch type if available
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [purchaseData, setPurchaseData] = useState<Purchase[]>([]);
+  const [loadingPurchases, setLoadingPurchases] = useState(false);
 
   useEffect(() => {
     fetchMerch();
@@ -88,6 +100,24 @@ export default function MerchScreen() {
     }
   };
 
+  const handleMerchPress = async (merchItem: any) => { // Replace 'any' with your merch type if available
+    setSelectedMerch(merchItem);
+    setPopupVisible(true);
+    setLoadingPurchases(true);
+    // Fetch purchases for this merch
+    const { data, error } = await supabase
+      .from('purchases')
+      .select('*, user:users!purchases_user_id_fkey(id, name, profile_image_url)')
+      .eq('merch_id', merchItem.id)
+      .order('created_at', { ascending: false });
+    
+    console.log('Purchases query result:', { data, error });
+    console.log('Merch ID being queried:', merchItem.id);
+    
+    setPurchaseData(data || []);
+    setLoadingPurchases(false);
+  };
+
   return (
     <View style={{ flex: 1 }}>
       {/* Done button in select mode, at absolute top right of the screen */}
@@ -121,7 +151,7 @@ export default function MerchScreen() {
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[styles.card, selectMode && selectedIds.includes(item.id) && { borderColor: '#00b2a9', borderWidth: 2 }]}
-                onPress={selectMode ? () => handleSelect(item.id) : undefined}
+                onPress={selectMode ? () => handleSelect(item.id) : () => handleMerchPress(item)}
                 onLongPress={() => handleLongPress(item.id)}
                 disabled={loading}
               >
@@ -164,6 +194,45 @@ export default function MerchScreen() {
           )}
         </View>
       </View>
+      {/* Purchases Popup Modal */}
+      <Modal visible={popupVisible} animationType="slide" transparent onRequestClose={() => setPopupVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { width: '90%', maxHeight: '90%', alignItems: 'stretch' }]}> 
+            <Text style={styles.modalTitle}>Purchases for: {selectedMerch?.title}</Text>
+            <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+              {loadingPurchases ? (
+                <ActivityIndicator color="#00b2a9" />
+              ) : purchaseData.length === 0 ? (
+                <Text style={styles.empty}>No purchases yet.</Text>
+              ) : (
+                <View style={{ marginTop: 12 }}>
+                  <View style={styles.tableHeaderRow}>
+                    <Text style={styles.tableHeaderCell}>Buyer</Text>
+                    <Text style={styles.tableHeaderCell}>Answers</Text>
+                    <Text style={styles.tableHeaderCell}>Qty</Text>
+                    <Text style={styles.tableHeaderCell}>Time</Text>
+                  </View>
+                  {purchaseData.map((purchase, idx) => (
+                    <View key={purchase.id || idx} style={styles.tableRow}>
+                      <Text style={styles.tableCell}>{purchase.user?.name || purchase.user?.id || 'Unknown'}</Text>
+                      <View style={[styles.tableCell, { alignItems: 'flex-start' }]}> 
+                        {Object.entries(purchase.answers || {}).map(([q, a], i) => (
+                          <Text key={i} style={styles.answerText}>{q}: {a}</Text>
+                        ))}
+                      </View>
+                      <Text style={styles.tableCell}>{purchase.quantity}</Text>
+                      <Text style={styles.tableCell}>{new Date(purchase.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <TouchableOpacity style={styles.closeModalButton} onPress={() => setPopupVisible(false)}>
+                <Text style={styles.closeModalText}>Close</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -316,4 +385,72 @@ const styles = StyleSheet.create({
     width: '100%',
     pointerEvents: 'box-none',
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    // alignItems: 'center', // Remove this to allow full width
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 18,
+    color: '#1C2A67',
+    textAlign: 'center',
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+    paddingBottom: 6,
+    marginBottom: 6,
+    backgroundColor: '#f7f7f7',
+  },
+  tableHeaderCell: {
+    flex: 1,
+    fontWeight: 'bold',
+    color: '#1C2A67',
+    fontSize: 15,
+    textAlign: 'center',
+    paddingHorizontal: 2,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderColor: '#f0f0f0',
+    paddingVertical: 8,
+    alignItems: 'flex-start',
+  },
+  tableCell: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+    paddingHorizontal: 2,
+  },
+  answerText: {
+    fontSize: 13,
+    color: '#333',
+    textAlign: 'left',
+    lineHeight: 18,
+  },
+  closeModalButton: {
+    marginTop: 24,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#eee',
+    alignSelf: 'center',
+  },
+  closeModalText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  empty: { color: '#888', fontSize: 16, textAlign: 'center', marginTop: 40 },
 }); 
