@@ -3,6 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, StyleSheet, Image, TouchableOp
 import { useMemberSubscriptions } from '@/hooks/useMemberSubscriptions';
 import { useMemberFeed } from '@/hooks/useMemberFeed';
 import { supabase } from '@/utils/supabaseClient';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface Question {
   id: string;
@@ -220,196 +221,197 @@ export default function MemberMerch() {
   if (subsError || error) {
     return <View style={styles.center}><Text style={styles.error}>{subsError || error}</Text></View>;
   }
-
   return (
-    <View style={{ flex: 1 }}>
-      {/* Filter Button */}
-      <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)}>
-        <Text style={styles.filterButtonText}>Filter</Text>
-      </TouchableOpacity>
-      {/* Show selected org */}
-      {selectedOrg && (
-        <View style={styles.selectedOrgBar}>
-          <Text style={styles.selectedOrgText}>
-            Showing: {orgs.find(o => o.id === selectedOrg)?.name || 'Organisation'}
-          </Text>
-          <Pressable onPress={() => setSelectedOrg(null)}>
-            <Text style={styles.clearFilterText}>Clear Filter</Text>
-          </Pressable>
-        </View>
-      )}
-      <FlatList
-        data={filteredMerch}
-        keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handleMerchPress(item)}>
-            <View style={styles.card}>
-              {item.image_url ? (
-                <Image source={{ uri: item.image_url }} style={styles.image} />
-              ) : (
-                <View style={styles.imagePlaceholder}><Text>🛍️</Text></View>
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.price}>${item.price?.toFixed(2) ?? ''}</Text>
-                <Text style={styles.desc}>{item.description}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>No merch from your subscriptions yet.</Text>}
-      />
-
-      {/* Simple Popup Modal for merch details */}
-      <Modal visible={popupVisible} animationType="slide" transparent onRequestClose={() => setPopupVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { width: 320 }]}>
-            {selectedMerch && (
-              <>
-                {selectedMerch.image_url ? (
-                  <Image source={{ uri: selectedMerch.image_url }} style={{ width: 120, height: 120, borderRadius: 12, marginBottom: 12 }} />
-                ) : (
-                  <View style={[styles.imagePlaceholder, { width: 120, height: 120, marginBottom: 12 }]}><Text>🛍️</Text></View>
-                )}
-                <Text style={[styles.title, { fontSize: 22, marginBottom: 6 }]}>{selectedMerch.title}</Text>
-                <Text style={[styles.price, { fontSize: 20, marginBottom: 6 }]}>${selectedMerch.price?.toFixed(2) ?? ''}</Text>
-                <Text style={[styles.desc, { fontSize: 16, marginBottom: 16 }]}>{selectedMerch.description}</Text>
-                <View style={{ flexDirection: 'row', gap: 16, marginTop: 10 }}>
-                  <TouchableOpacity style={[styles.closeModalButton, { backgroundColor: '#eee', flex: 1 }]} onPress={() => setPopupVisible(false)}>
-                    <Text style={styles.closeModalText}>Back</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.closeModalButton, { backgroundColor: '#00b2a9', flex: 1 }]} onPress={handleBuyPress}>
-                    <Text style={[styles.closeModalText, { color: '#fff' }]}>Buy</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
+    <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        {/* Filter Button */}
+        <TouchableOpacity style={[styles.filterButton, { backgroundColor: '#222B45' }]} onPress={() => setFilterModalVisible(true)}>
+          <Text style={[styles.filterButtonText, { color: '#fff' }]}>Filter</Text>
+        </TouchableOpacity>
+        {/* Show selected org */}
+        {selectedOrg && (
+          <View style={[styles.selectedOrgBar, { backgroundColor: 'rgba(255,255,255,0.7)' }] }>
+            <Text style={[styles.selectedOrgText, { color: '#222B45' }] }>
+              Showing: {orgs.find(o => o.id === selectedOrg)?.name || 'Organisation'}
+            </Text>
+            <Pressable onPress={() => setSelectedOrg(null)}>
+              <Text style={[styles.clearFilterText, { color: '#FF4444' }]}>Clear Filter</Text>
+            </Pressable>
           </View>
-        </View>
-      </Modal>
+        )}
+        <FlatList
+          data={filteredMerch}
+          keyExtractor={item => item.id}
+          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => handleMerchPress(item)}>
+              <View style={[styles.card, { backgroundColor: 'rgba(255,255,255,0.95)' }] }>
+                {item.image_url ? (
+                  <Image source={{ uri: item.image_url }} style={styles.image} />
+                ) : (
+                  <View style={styles.imagePlaceholder}><Text>🛍️</Text></View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.title, { color: '#222B45' }]}>{item.title}</Text>
+                  <Text style={[styles.desc, { color: '#6B7280' }]}>{item.description}</Text>
+                  <Text style={[styles.price, { color: '#00b2a9' }]}>${item.price}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={<Text style={[styles.empty, { color: '#888' }]}>No merchandise from your subscriptions yet.</Text>}
+        />
 
-      {/* Purchase Modal */}
-      <Modal visible={purchaseModalVisible} animationType="slide" transparent onRequestClose={() => setPurchaseModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { width: '90%', maxHeight: '90%' }]}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Simple Popup Modal for merch details */}
+        <Modal visible={popupVisible} animationType="slide" transparent onRequestClose={() => setPopupVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { width: 320, backgroundColor: 'rgba(255,255,255,0.98)' }]}>
               {selectedMerch && (
                 <>
-                  {/* Merch Details */}
-                  <View style={styles.merchSection}>
-                    {selectedMerch.image_url ? (
-                      <Image source={{ uri: selectedMerch.image_url }} style={styles.merchImage} />
-                    ) : (
-                      <View style={styles.imagePlaceholder}>
-                        <Text style={styles.placeholderText}>🛍️</Text>
-                      </View>
-                    )}
-                    <Text style={styles.merchTitle}>{selectedMerch.title}</Text>
-                    <Text style={styles.merchPrice}>${selectedMerch.price.toFixed(2)}</Text>
-                    <Text style={styles.merchDescription}>{selectedMerch.description}</Text>
-                  </View>
-
-                  {/* Quantity Selector */}
-                  <View style={styles.quantitySection}>
-                    <Text style={styles.sectionTitle}>Quantity</Text>
-                    <View style={styles.quantityContainer}>
-                      <TouchableOpacity 
-                        style={styles.quantityButton}
-                        onPress={() => setQuantity(Math.max(1, quantity - 1))}
-                      >
-                        <Text style={styles.quantityButtonText}>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.quantityText}>{quantity}</Text>
-                      <TouchableOpacity 
-                        style={styles.quantityButton}
-                        onPress={() => setQuantity(quantity + 1)}
-                      >
-                        <Text style={styles.quantityButtonText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  {/* Questions Form */}
-                  {selectedMerch.questions && selectedMerch.questions.length > 0 && (
-                    <View style={styles.questionsSection}>
-                      <Text style={styles.sectionTitle}>Please provide the following information:</Text>
-                      {selectedMerch.questions.map((question, index) => (
-                        <View key={`question-${question.id || index}`} style={styles.questionContainer}>
-                          <Text style={styles.questionText}>
-                            {index + 1}. {question.text}
-                            {question.required && <Text style={styles.required}> *</Text>}
-                          </Text>
-                          {renderQuestion(question)}
-                        </View>
-                      ))}
-                    </View>
+                  {selectedMerch.image_url ? (
+                    <Image source={{ uri: selectedMerch.image_url }} style={{ width: 120, height: 120, borderRadius: 12, marginBottom: 12 }} />
+                  ) : (
+                    <View style={[styles.imagePlaceholder, { width: 120, height: 120, marginBottom: 12 }]}><Text>🛍️</Text></View>
                   )}
-
-                  {/* Payment Section */}
-                  <View style={styles.paymentSection}>
-                    <Text style={styles.sectionTitle}>Payment</Text>
-                    <View style={styles.paymentMethod}>
-                      <Text style={styles.paymentMethodText}>💳 Simulated Payment Gateway</Text>
-                      <Text style={styles.paymentNote}>This is a demo payment simulation</Text>
-                    </View>
-                    <View style={styles.totalContainer}>
-                      <Text style={styles.totalLabel}>Total:</Text>
-                      <Text style={styles.totalAmount}>${(selectedMerch.price * quantity).toFixed(2)}</Text>
-                    </View>
+                  <Text style={[styles.title, { fontSize: 22, marginBottom: 6, color: '#222B45' }]}>{selectedMerch.title}</Text>
+                  <Text style={[styles.price, { fontSize: 20, marginBottom: 6, color: '#00b2a9' }]}>${selectedMerch.price?.toFixed(2) ?? ''}</Text>
+                  <Text style={[styles.desc, { fontSize: 16, marginBottom: 16, color: '#6B7280' }]}>{selectedMerch.description}</Text>
+                  <View style={{ flexDirection: 'row', gap: 16, marginTop: 10 }}>
+                    <TouchableOpacity style={[styles.closeModalButton, { backgroundColor: '#eee', flex: 1 }]} onPress={() => setPopupVisible(false)}>
+                      <Text style={[styles.closeModalText, { color: '#222B45' }]}>Back</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.closeModalButton, { backgroundColor: '#00b2a9', flex: 1 }]} onPress={handleBuyPress}>
+                      <Text style={[styles.closeModalText, { color: '#fff' }]}>Buy</Text>
+                    </TouchableOpacity>
                   </View>
-
-                  {/* Purchase Button */}
-                  <TouchableOpacity 
-                    style={[styles.purchaseButton, submitting && styles.purchaseButtonDisabled]}
-                    onPress={handlePurchase}
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <Text style={styles.purchaseButtonText}>Complete Purchase</Text>
-                    )}
-                  </TouchableOpacity>
-
-                  {/* Close Button */}
-                  <TouchableOpacity 
-                    style={[styles.closeModalButton, { marginTop: 16 }]} 
-                    onPress={() => setPurchaseModalVisible(false)}
-                  >
-                    <Text style={styles.closeModalText}>Cancel</Text>
-                  </TouchableOpacity>
                 </>
               )}
-            </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Modal for org filter */}
-      <Modal visible={filterModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filter by Organisation</Text>
-            {orgs.map(org => (
-              <TouchableOpacity
-                key={org.id}
-                style={[styles.orgOption, selectedOrg === org.id && styles.selectedOrgOption]}
-                onPress={() => {
-                  setSelectedOrg(org.id);
-                  setFilterModalVisible(false);
-                }}
-              >
-                <Text style={styles.orgName}>{org.name}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.closeModalButton} onPress={() => setFilterModalVisible(false)}>
-              <Text style={styles.closeModalText}>Close</Text>
-            </TouchableOpacity>
+        {/* Purchase Modal */}
+        <Modal visible={purchaseModalVisible} animationType="slide" transparent onRequestClose={() => setPurchaseModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { width: '90%', maxHeight: '90%', backgroundColor: 'rgba(255,255,255,0.98)' }]}>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {selectedMerch && (
+                  <>
+                    {/* Merch Details */}
+                    <View style={styles.merchSection}>
+                      {selectedMerch.image_url ? (
+                        <Image source={{ uri: selectedMerch.image_url }} style={styles.merchImage} />
+                      ) : (
+                        <View style={styles.imagePlaceholder}>
+                          <Text style={styles.placeholderText}>🛍️</Text>
+                        </View>
+                      )}
+                      <Text style={styles.merchTitle}>{selectedMerch.title}</Text>
+                      <Text style={styles.merchPrice}>${selectedMerch.price.toFixed(2)}</Text>
+                      <Text style={styles.merchDescription}>{selectedMerch.description}</Text>
+                    </View>
+
+                    {/* Quantity Selector */}
+                    <View style={styles.quantitySection}>
+                      <Text style={styles.sectionTitle}>Quantity</Text>
+                      <View style={styles.quantityContainer}>
+                        <TouchableOpacity 
+                          style={styles.quantityButton}
+                          onPress={() => setQuantity(Math.max(1, quantity - 1))}
+                        >
+                          <Text style={styles.quantityButtonText}>-</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.quantityText}>{quantity}</Text>
+                        <TouchableOpacity 
+                          style={styles.quantityButton}
+                          onPress={() => setQuantity(quantity + 1)}
+                        >
+                          <Text style={styles.quantityButtonText}>+</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Questions Form */}
+                    {selectedMerch.questions && selectedMerch.questions.length > 0 && (
+                      <View style={styles.questionsSection}>
+                        <Text style={styles.sectionTitle}>Please provide the following information:</Text>
+                        {selectedMerch.questions.map((question, index) => (
+                          <View key={`question-${question.id || index}`} style={styles.questionContainer}>
+                            <Text style={styles.questionText}>
+                              {index + 1}. {question.text}
+                              {question.required && <Text style={styles.required}> *</Text>}
+                            </Text>
+                            {renderQuestion(question)}
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* Payment Section */}
+                    <View style={styles.paymentSection}>
+                      <Text style={styles.sectionTitle}>Payment</Text>
+                      <View style={styles.paymentMethod}>
+                        <Text style={styles.paymentMethodText}>💳 Simulated Payment Gateway</Text>
+                        <Text style={styles.paymentNote}>This is a demo payment simulation</Text>
+                      </View>
+                      <View style={styles.totalContainer}>
+                        <Text style={styles.totalLabel}>Total:</Text>
+                        <Text style={styles.totalAmount}>${(selectedMerch.price * quantity).toFixed(2)}</Text>
+                      </View>
+                    </View>
+
+                    {/* Purchase Button */}
+                    <TouchableOpacity 
+                      style={[styles.purchaseButton, submitting && styles.purchaseButtonDisabled]}
+                      onPress={handlePurchase}
+                      disabled={submitting}
+                    >
+                      {submitting ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                      ) : (
+                        <Text style={styles.purchaseButtonText}>Complete Purchase</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Close Button */}
+                    <TouchableOpacity 
+                      style={[styles.closeModalButton, { marginTop: 16 }]} 
+                      onPress={() => setPurchaseModalVisible(false)}
+                    >
+                      <Text style={[styles.closeModalText, { color: '#FF4444' }]}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+
+        {/* Modal for org filter */}
+        <Modal visible={filterModalVisible} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: 'rgba(255,255,255,0.98)' }]}>
+              <Text style={[styles.modalTitle, { color: '#222B45' }]}>Filter by Organisation</Text>
+              {orgs.map(org => (
+                <TouchableOpacity
+                  key={org.id}
+                  style={[styles.orgOption, selectedOrg === org.id && styles.selectedOrgOption, { backgroundColor: selectedOrg === org.id ? '#EAF0FF' : 'rgba(0,0,0,0.03)' }]}
+                  onPress={() => {
+                    setSelectedOrg(org.id);
+                    setFilterModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.orgName, { color: '#222B45' }]}>{org.name}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.closeModalButton} onPress={() => setFilterModalVisible(false)}>
+                <Text style={[styles.closeModalText, { color: '#FF4444' }]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </LinearGradient>
   );
 }
 

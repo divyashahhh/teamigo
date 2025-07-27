@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet,
   Pressable, Alert, Image,
-  KeyboardAvoidingView, Platform, ScrollView
+  KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity
 } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 export default function LoginScreen(): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -86,6 +87,11 @@ export default function LoginScreen(): React.JSX.Element {
       // Save role to local storage
       const finalRole = existingUser?.role || user.user_metadata?.role || 'member';
       await AsyncStorage.setItem('userRole', finalRole);
+      if (rememberMe) {
+        await AsyncStorage.setItem('rememberMe', 'true');
+      } else {
+        await AsyncStorage.removeItem('rememberMe');
+      }
 
       Alert.alert('Login Successful', `Welcome back, ${finalRole}!`);
 
@@ -129,6 +135,20 @@ export default function LoginScreen(): React.JSX.Element {
             onChangeText={setPassword}
             placeholderTextColor="#888"
           />
+
+          {/* Remember Me Checkbox */}
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
+            onPress={() => setRememberMe(!rememberMe)}
+            activeOpacity={0.7}
+          >
+            <View style={{
+              width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: '#222B45', marginRight: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: rememberMe ? '#222B45' : 'transparent',
+            }}>
+              {rememberMe && <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#fff' }} />}
+            </View>
+            <Text style={{ color: '#222B45', fontSize: 16, fontWeight: '500' }}>Remember me</Text>
+          </TouchableOpacity>
 
           <Pressable style={styles.loginButton} onPress={handleLogin}>
             <Text style={styles.loginText}>Log In</Text>

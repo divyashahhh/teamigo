@@ -80,9 +80,10 @@ export default function Index() {
     try {
       setLoading(true);
       setError(null);
-      // Check onboarding status
+      // Check if user wants to be remembered
+      const rememberMe = await AsyncStorage.getItem('rememberMe');
       const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
-      if (!onboardingComplete) {
+      if (!rememberMe && !onboardingComplete) {
         setShowOnboarding(true);
         setLoading(false);
         return;
@@ -169,6 +170,7 @@ export default function Index() {
   if (showOnboarding) {
     return <OnboardingScreen onComplete={async () => {
       await AsyncStorage.setItem('onboardingComplete', 'true');
+      await AsyncStorage.removeItem('rememberMe');
       setShowOnboarding(false);
       setLoading(true);
       checkLoginStatus();

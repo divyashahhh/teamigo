@@ -3,6 +3,7 @@ import { View, Text, ActivityIndicator, StyleSheet, FlatList } from 'react-nativ
 import { Calendar } from 'react-native-calendars';
 import { useMemberSubscriptions } from '@/hooks/useMemberSubscriptions';
 import { useMemberFeed } from '@/hooks/useMemberFeed';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function MemberCalendar() {
   const { hostIds, loading: subsLoading, error: subsError } = useMemberSubscriptions();
@@ -37,33 +38,34 @@ export default function MemberCalendar() {
   if (subsError || error) {
     return <View style={styles.center}><Text style={styles.error}>{subsError || error}</Text></View>;
   }
-
   return (
-    <View style={styles.container}>
-      <Calendar
-        onDayPress={day => setSelectedDate(day.dateString)}
-        markedDates={markedDates}
-        style={styles.calendar}
-        theme={{
-          selectedDayBackgroundColor: '#00b2a9',
-          todayTextColor: '#00b2a9',
-          dotColor: '#00b2a9',
-        }}
-      />
-      <Text style={styles.sectionTitle}>Events</Text>
-      <FlatList
-        data={selectedDate ? eventsByDate[selectedDate] || [] : []}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.title}>{item.content}</Text>
-            <Text style={styles.date}>{new Date(item.date).toLocaleDateString()}</Text>
-          </View>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>No events for this day.</Text>}
-        contentContainerStyle={{ paddingBottom: 120 }}
-      />
-    </View>
+    <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: 60, paddingHorizontal: 20 }}>
+        <Calendar
+          onDayPress={day => setSelectedDate(day.dateString)}
+          markedDates={markedDates}
+          style={[styles.calendar, { backgroundColor: 'rgba(255,255,255,0.95)' }]}
+          theme={{
+            selectedDayBackgroundColor: '#00b2a9',
+            todayTextColor: '#00b2a9',
+            dotColor: '#00b2a9',
+          }}
+        />
+        <Text style={[styles.sectionTitle, { color: '#222B45' }]}>Events</Text>
+        <FlatList
+          data={selectedDate ? eventsByDate[selectedDate] || [] : []}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <View style={[styles.card, { backgroundColor: 'rgba(255,255,255,0.95)' }] }>
+              <Text style={[styles.title, { color: '#222B45' }]}>{item.content}</Text>
+              <Text style={[styles.date, { color: '#888' }]}>{new Date(item.date).toLocaleDateString()}</Text>
+            </View>
+          )}
+          ListEmptyComponent={<Text style={[styles.empty, { color: '#888' }]}>No events for this day.</Text>}
+          contentContainerStyle={{ paddingBottom: 120 }}
+        />
+      </View>
+    </LinearGradient>
   );
 }
 

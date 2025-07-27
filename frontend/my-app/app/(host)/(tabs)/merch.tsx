@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator, Modal, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
+import * as FileSystem from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface Purchase {
   id: string;
@@ -118,8 +120,21 @@ export default function MerchScreen() {
     setLoadingPurchases(false);
   };
 
+  const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dgmcfhlkc/image/upload';
+  const CLOUDINARY_PRESET = 'user_uploads';
+  const uploadToCloudinary = async (uri: string) => {
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    const data = new FormData();
+    data.append('file', `data:image/jpeg;base64,${base64}`);
+    data.append('upload_preset', CLOUDINARY_PRESET);
+    data.append('folder', 'merch_images');
+    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: data });
+    const result = await res.json();
+    if (result.secure_url) { return result.secure_url; } else { throw new Error('Cloudinary upload failed'); }
+  };
+
   return (
-    <View style={{ flex: 1 }}>
+    <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
       {/* Done button in select mode, at absolute top right of the screen */}
       {selectMode && (
         <View style={[StyleSheet.absoluteFillObject, { pointerEvents: 'box-none' }]}>
@@ -150,13 +165,23 @@ export default function MerchScreen() {
             keyExtractor={item => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.card, selectMode && selectedIds.includes(item.id) && { borderColor: '#00b2a9', borderWidth: 2 }]}
+                style={[styles.card, { flexDirection: 'row' }, selectMode && selectedIds.includes(item.id) && { borderColor: '#00b2a9', borderWidth: 2 }]}
                 onPress={selectMode ? () => handleSelect(item.id) : () => handleMerchPress(item)}
                 onLongPress={() => handleLongPress(item.id)}
                 disabled={loading}
               >
                 {item.image_url ? (
-                  <Image source={{ uri: item.image_url }} style={styles.image} />
+                  <Image
+                    source={{ uri: item.image_url }}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 8,
+                      marginRight: 16,
+                      backgroundColor: '#eee',
+                    }}
+                    resizeMode="cover"
+                  />
                 ) : (
                   <View style={styles.imagePlaceholder}><Text>🛍️</Text></View>
                 )}
@@ -233,28 +258,28 @@ export default function MerchScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent', // Make the main content transparent
     paddingTop: 60,
     paddingHorizontal: 20,
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#00b2a9',
+    color: '#1C2A67', // Dark text on light background
     marginBottom: 20,
     marginTop: 10,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f7f7f7',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent white overlay
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -281,7 +306,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#222',
+    color: '#1C2A67', // Dark text on light background
   },
   price: {
     fontSize: 16,

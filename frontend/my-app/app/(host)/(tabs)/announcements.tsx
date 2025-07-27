@@ -4,6 +4,8 @@ import {
 } from 'react-native';
 import { supabase } from '@/utils/supabaseClient';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -71,27 +73,15 @@ export default function HostAnnouncementsScreen() {
     }
   };
 
-  const uploadImageToSupabase = async (uri: string) => {
-    setImageUploading(true);
-    try {
-      if (!userId) return null;
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const fileName = `announcement-${userId}-${Date.now()}.jpg`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('announcement-images-new')
-        .upload(fileName, blob);
-      if (uploadError) {
-        Alert.alert('Upload error', uploadError.message);
-        return null;
-      }
-      const { data: urlData } = supabase.storage
-        .from('announcement-images-new')
-        .getPublicUrl(fileName);
-      return urlData.publicUrl;
-    } finally {
-      setImageUploading(false);
-    }
+  const uploadToCloudinary = async (uri: string) => {
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    const data = new FormData();
+    data.append('file', `data:image/jpeg;base64,${base64}`);
+    data.append('upload_preset', 'user_uploads');
+    data.append('folder', 'announcement_images');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dgmcfhlkc/image/upload', { method: 'POST', body: data });
+    const result = await res.json();
+    if (result.secure_url) { return result.secure_url; } else { throw new Error('Cloudinary upload failed'); }
   };
 
   const handleSubmit = async () => {
@@ -111,13 +101,17 @@ export default function HostAnnouncementsScreen() {
     console.log('Announcement data:', { title: title.trim(), description: description.trim() });
     
     // 1. Insert announcement row without image_url
+    let imageUrl = null;
+    if (image) {
+      imageUrl = await uploadToCloudinary(image);
+    }
     const { data: insertData, error: insertError } = await supabase
       .from('announcements')
       .insert({
         host_id: user.id,
         title: title.trim(),
         description: description.trim(),
-        // image_url: null for now
+        image_url: imageUrl,
       })
       .select()
       .single();
@@ -134,27 +128,7 @@ export default function HostAnnouncementsScreen() {
     console.log('Announcement inserted with ID:', announcementId);
     
     // 2. Upload the image (if any)
-    let imageUrl = null;
-    if (image) {
-      console.log('Uploading image for announcement ID:', announcementId);
-      const response = await fetch(image);
-      const blob = await response.blob();
-      const fileName = `${announcementId}/image.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from('announcement-images-new')
-        .upload(fileName, blob, { upsert: true });
-      if (uploadError) {
-        console.error('Image upload error:', uploadError);
-        Alert.alert('Upload error', uploadError.message);
-        setSubmitting(false);
-        return;
-      }
-      const { data: urlData } = supabase.storage
-        .from('announcement-images-new')
-        .getPublicUrl(fileName);
-      imageUrl = urlData.publicUrl;
-      console.log('Image uploaded, URL:', imageUrl);
-    }
+    // The image upload logic is now handled by Cloudinary in the backend
     
     // 3. Update the announcement row with the image URL
     if (imageUrl) {
@@ -236,17 +210,29 @@ export default function HostAnnouncementsScreen() {
   const renderAnnouncement = (a: any) => (
     <Pressable
       key={a.id}
-      style={[styles.card, selectMode && selectedIds.includes(a.id) && { borderColor: '#00b2a9', borderWidth: 2 }]}
+      style={[styles.card, { flexDirection: 'row' }, selectMode && selectedIds.includes(a.id) && { borderColor: '#00b2a9', borderWidth: 2 }]}
       onPress={selectMode ? () => handleSelectAnnouncement(a.id) : undefined}
       onLongPress={() => handleLongPressAnnouncement(a.id)}
       disabled={loading}
     >
       {a.image_url ? (
-        <Image source={{ uri: a.image_url }} style={styles.announcementImage} resizeMode="cover" />
+        <Image
+          source={{ uri: a.image_url }}
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 10,
+            marginRight: 16,
+            backgroundColor: '#eee',
+          }}
+          resizeMode="cover"
+        />
       ) : null}
-      <Text style={styles.cardTitle}>{a.title}</Text>
-      <Text style={styles.cardBody}>{a.description}</Text>
-      <Text style={styles.cardDate}>{new Date(a.created_at).toLocaleString()}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.cardTitle}>{a.title}</Text>
+        <Text style={styles.cardBody}>{a.description}</Text>
+        <Text style={styles.cardDate}>{new Date(a.created_at).toLocaleString()}</Text>
+      </View>
       {selectMode && (
         <View style={styles.checkboxCircle}>
           {selectedIds.includes(a.id) && <View style={styles.checkboxInner} />}
@@ -256,125 +242,127 @@ export default function HostAnnouncementsScreen() {
   );
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* Done button in select mode, at absolute top right of the screen, overlaying header */}
-      {selectMode && (
-        <TouchableOpacity
-          style={styles.doneButtonScreenEdge}
-          onPress={() => {
-            setSelectMode(false);
-            setSelectedIds([]);
-          }}
-        >
-          <Text style={styles.doneButtonText}>Done</Text>
-        </TouchableOpacity>
-      )}
-      <View style={styles.mainContainer}>
-        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
-          {loading ? (
-            <ActivityIndicator color="#00b2a9" style={{ marginTop: 40 }} />
-          ) : announcements.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No announcements yet.</Text>
-            </View>
-          ) : (
-            announcements.map(renderAnnouncement)
-          )}
-        </ScrollView>
-        {/* Floating Plus & Trash Buttons */}
-        <View style={styles.fabRow}>
-          {!selectMode ? (
-            <TouchableOpacity
-              style={styles.fab}
-              onPress={() => setShowModal(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.fabPlus}>+</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.fab, styles.deleteFab]}
-              onPress={confirmAndDeleteAnnouncements}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.fabCross}>×</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        {/* Modal for New Announcement */}
-        <Modal visible={showModal} animationType="slide" transparent>
-          <KeyboardAvoidingView
-            style={styles.modalOverlay}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        {/* Done button in select mode, at absolute top right of the screen, overlaying header */}
+        {selectMode && (
+          <TouchableOpacity
+            style={styles.doneButtonScreenEdge}
+            onPress={() => {
+              setSelectMode(false);
+              setSelectedIds([]);
+            }}
           >
-            <View style={styles.modalCenterWrap}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>New Announcement</Text>
-                {/* Image Picker */}
-                <Pressable style={styles.circularFrame} onPress={pickImage}>
-                  {image ? (
-                    <Image source={{ uri: image }} style={styles.profileImage} resizeMode="cover" />
-                  ) : (
-                    <Text style={styles.addImageText}>+</Text>
-                  )}
-                  {imageUploading && <ActivityIndicator style={{ position: 'absolute', alignSelf: 'center', top: 40 }} color="#00b2a9" />}
-                </Pressable>
-                <TextInput
-                  style={styles.input}
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder="Title"
-                  placeholderTextColor="#888"
-                  returnKeyType="next"
-                />
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder="Description"
-                  placeholderTextColor="#888"
-                  multiline
-                  numberOfLines={3}
-                  returnKeyType="done"
-                  blurOnSubmit={true}
-                />
-                <View style={styles.modalButtonsRow}>
-                  <Pressable
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => {
-                      setShowModal(false);
-                      setTitle('');
-                      setDescription('');
-                      setImage(null);
-                    }}
-                    disabled={submitting}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.doneButtonText}>Done</Text>
+          </TouchableOpacity>
+        )}
+        <View style={styles.mainContainer}>
+          <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
+            {loading ? (
+              <ActivityIndicator color="#00b2a9" style={{ marginTop: 40 }} />
+            ) : announcements.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No announcements yet.</Text>
+              </View>
+            ) : (
+              announcements.map(renderAnnouncement)
+            )}
+          </ScrollView>
+          {/* Floating Plus & Trash Buttons */}
+          <View style={styles.fabRow}>
+            {!selectMode ? (
+              <TouchableOpacity
+                style={styles.fab}
+                onPress={() => setShowModal(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.fabPlus}>+</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.fab, styles.deleteFab]}
+                onPress={confirmAndDeleteAnnouncements}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.fabCross}>×</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {/* Modal for New Announcement */}
+          <Modal visible={showModal} animationType="slide" transparent>
+            <KeyboardAvoidingView
+              style={styles.modalOverlay}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+              <View style={styles.modalCenterWrap}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>New Announcement</Text>
+                  {/* Image Picker */}
+                  <Pressable style={styles.circularFrame} onPress={pickImage}>
+                    {image ? (
+                      <Image source={{ uri: image }} style={styles.profileImage} resizeMode="cover" />
+                    ) : (
+                      <Text style={styles.addImageText}>+</Text>
+                    )}
+                    {imageUploading && <ActivityIndicator style={{ position: 'absolute', alignSelf: 'center', top: 40 }} color="#00b2a9" />}
                   </Pressable>
-                  <Pressable
-                    style={[styles.modalButton, styles.saveButton, submitting && styles.saveButtonDisabled]}
-                    onPress={handleSubmit}
-                    disabled={submitting}
-                  >
-                    <Text style={styles.saveButtonText}>{submitting ? 'Posting...' : 'Post'}</Text>
-                  </Pressable>
+                  <TextInput
+                    style={styles.input}
+                    value={title}
+                    onChangeText={setTitle}
+                    placeholder="Title"
+                    placeholderTextColor="#888"
+                    returnKeyType="next"
+                  />
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={description}
+                    onChangeText={setDescription}
+                    placeholder="Description"
+                    placeholderTextColor="#888"
+                    multiline
+                    numberOfLines={3}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
+                  />
+                  <View style={styles.modalButtonsRow}>
+                    <Pressable
+                      style={[styles.modalButton, styles.cancelButton]}
+                      onPress={() => {
+                        setShowModal(false);
+                        setTitle('');
+                        setDescription('');
+                        setImage(null);
+                      }}
+                      disabled={submitting}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.modalButton, styles.saveButton, submitting && styles.saveButtonDisabled]}
+                      onPress={handleSubmit}
+                      disabled={submitting}
+                    >
+                      <Text style={styles.saveButtonText}>{submitting ? 'Posting...' : 'Post'}</Text>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
-            </View>
-          </KeyboardAvoidingView>
-        </Modal>
+            </KeyboardAvoidingView>
+          </Modal>
+        </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent', // Make the main content transparent
   },
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent', // Make the ScrollView transparent
     paddingTop: Platform.OS === 'android' ? 60 : 80,
     paddingHorizontal: 20,
   },
@@ -382,9 +370,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     marginTop: 80,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent white overlay
+    borderRadius: 20,
+    padding: 20,
   },
   emptyText: {
-    color: '#888',
+    color: '#333', // Dark text for contrast
     fontSize: 18,
     fontWeight: '500',
   },
@@ -414,13 +405,13 @@ const styles = StyleSheet.create({
     shadowColor: '#ff4444',
   },
   fabPlus: {
-    color: '#fff',
+    color: '#fff', // White text on dark button
     fontSize: 40,
     fontWeight: 'bold',
     marginTop: -2,
   },
   fabCross: {
-    color: '#fff',
+    color: '#fff', // White text on dark button
     fontSize: 40,
     fontWeight: 'bold',
     marginTop: -2,
@@ -445,7 +436,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#00b2a9',
   },
   card: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Semi-transparent white overlay
     borderRadius: 20,
     padding: 18,
     marginBottom: 20,
@@ -466,7 +457,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 6,
-    color: '#333',
+    color: '#333', // Dark text for contrast
   },
   cardBody: {
     fontSize: 14,
@@ -509,7 +500,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#333', // Dark text for contrast
     marginBottom: 18,
     textAlign: 'left',
   },
@@ -569,7 +560,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF4444',
   },
   cancelButtonText: {
-    color: '#fff',
+    color: '#fff', // White text on dark button
     fontWeight: '600',
     fontSize: 16,
   },
@@ -580,7 +571,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
   },
   saveButtonText: {
-    color: '#fff',
+    color: '#fff', // White text on dark button
     fontWeight: '600',
     fontSize: 16,
   },
@@ -601,7 +592,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   doneButtonText: {
-    color: '#fff',
+    color: '#fff', // White text on dark button
     fontWeight: 'bold',
     fontSize: 16,
   },
