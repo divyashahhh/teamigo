@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/utils/supabaseClient';
 import { LinearGradient } from 'expo-linear-gradient';
+import { chatService } from '../../services/chatService';
 
 interface HostData {
   id: string;
@@ -147,6 +148,27 @@ export default function MemberInPortal() {
     }
   };
 
+  const handleStartChat = async () => {
+    if (!currentUserId || !hostData?.id) {
+      Alert.alert('Error', 'Unable to start chat at this time');
+      return;
+    }
+
+    try {
+      // Create or get conversation with the host
+      const conversationId = await chatService.createOrGetConversation(hostData.id);
+      
+      // Navigate to the member chat thread
+      router.push({
+        pathname: '/(member)/chat_thread' as any,
+        params: { conversationId }
+      });
+    } catch (err) {
+      console.error('Error starting chat:', err);
+      Alert.alert('Error', 'Failed to start chat');
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -218,7 +240,7 @@ export default function MemberInPortal() {
             </TouchableOpacity>
             <TouchableOpacity
               style={{ backgroundColor: '#222B45', paddingVertical: 14, paddingHorizontal: 24, borderRadius: 22, minWidth: 60, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
-              onPress={() => router.push('/chats')}
+              onPress={handleStartChat}
             >
               <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#fff' }} />
             </TouchableOpacity>

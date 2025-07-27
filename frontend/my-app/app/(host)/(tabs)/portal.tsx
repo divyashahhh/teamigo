@@ -389,14 +389,19 @@ export default function PortalScreen() {
     <LinearGradient colors={['#1A237E', '#222B45', '#0A0F2C']} style={{ flex: 1 }}>
       <View style={[styles.mainContainer, { backgroundColor: 'transparent' }]}>
         {/* Remove the header with chats and analytics buttons at the top right */}
-        {/* Add a top bar with settings on the left and chats on the right, matching profile.tsx */}
+        {/* Add a top bar with settings on the left and chats/analytics on the right */}
         <View style={{ position: 'absolute', top: 40, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18 }}>
           <Pressable onPress={() => setShowSettingsModal(true)} style={{ padding: 8 }}>
             <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#222B45' }} />
           </Pressable>
-          <Pressable onPress={() => router.push('/(host)/chats')} style={{ padding: 8 }}>
-            <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+                       <Pressable onPress={() => router.push('/(host)/chats')} style={{ padding: 8 }}>
+             <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
+           </Pressable>
+            <Pressable onPress={() => setAnalyticsVisible(true)} style={{ padding: 8 }}>
+              <Text style={{ fontSize: 24, color: '#00b2a9' }}>📊</Text>
+            </Pressable>
+          </View>
         </View>
         <ScrollView 
           style={styles.scrollView}
