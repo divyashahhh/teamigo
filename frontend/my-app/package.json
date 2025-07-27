@@ -64,4 +64,18 @@
     "typescript": "~5.8.3"
   },
   "private": true
+  , 
+  
+  "jest": {
+  "preset": "jest-expo",
+  "transform": {
+    "^.+\\.[jt]sx?$": "babel-jest"
+  },
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/my-app/$1"
+  },
+  "setupFilesAfterEnv": ["@testing-library/jest-native/extend-expect"]
 }
+  
+}
+
