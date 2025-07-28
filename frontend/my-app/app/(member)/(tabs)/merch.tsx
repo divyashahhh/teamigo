@@ -410,7 +410,7 @@ export default function MemberMerch() {
             </View>
           </View>
         </Modal>
-      </View>
+    </View>
     </LinearGradient>
   );
 }

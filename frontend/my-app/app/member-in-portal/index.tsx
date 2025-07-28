@@ -222,10 +222,10 @@ export default function MemberInPortal() {
               {displayTags.map((tag: string, idx: number) => (
                 <View key={idx} style={{ backgroundColor: '#E6F7F6', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginHorizontal: 4, marginBottom: 4 }}>
                   <Text style={{ color: '#00b2a9', fontWeight: '600', fontSize: 13 }}>{tag}</Text>
-                </View>
-              ))}
-            </View>
-          )}
+              </View>
+            ))}
+          </View>
+        )}
           <View style={{ flexDirection: 'row', gap: 16, marginTop: 10, width: '100%', justifyContent: 'center' }}>
             <TouchableOpacity
               style={{ backgroundColor: subscribed ? '#dc3545' : '#00b2a9', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 22, minWidth: 120, alignItems: 'center' }}
@@ -238,12 +238,12 @@ export default function MemberInPortal() {
                 <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>{subscribed ? 'UNSUBSCRIBE' : 'SUBSCRIBE'}</Text>
               )}
             </TouchableOpacity>
-            <TouchableOpacity
+        <TouchableOpacity
               style={{ backgroundColor: '#222B45', paddingVertical: 14, paddingHorizontal: 24, borderRadius: 22, minWidth: 60, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
               onPress={handleStartChat}
-            >
+        >
               <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#fff' }} />
-            </TouchableOpacity>
+        </TouchableOpacity>
           </View>
         </View>
         <TouchableOpacity style={{ marginTop: 18, padding: 10, borderRadius: 12, backgroundColor: '#eee' }} onPress={() => router.back()}>

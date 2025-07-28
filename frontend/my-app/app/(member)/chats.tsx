@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { chatService } from '../../services/chatService';
 import { ChatConversation } from '../../types/chat';
 import { useThemeColor } from '../../hooks/useThemeColor';
@@ -18,6 +18,7 @@ export default function MemberChats() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
@@ -31,7 +32,9 @@ export default function MemberChats() {
     try {
       setLoading(true);
       const userConversations = await chatService.getUserConversations();
-      setConversations(userConversations);
+      // Filter out conversations with no messages
+      const conversationsWithMessages = userConversations.filter(conv => conv.last_message);
+      setConversations(conversationsWithMessages);
       setError(null);
     } catch (err) {
       setError('Failed to load conversations');
@@ -46,6 +49,17 @@ export default function MemberChats() {
       pathname: '/(member)/chat_thread' as any,
       params: { conversationId: conversation.id }
     });
+  };
+
+  const handleBackPress = () => {
+    if (from === 'profile') {
+      router.push('/(member)/(tabs)/profile' as any);
+    } else if (from === 'portal') {
+      router.back();
+    } else {
+      // Default fallback
+      router.push('/(member)/(tabs)/maps' as any);
+    }
   };
 
   const formatTime = (timestamp: string) => {
@@ -87,7 +101,7 @@ export default function MemberChats() {
           <View style={styles.conversationFooter}>
             <Text style={[styles.lastMessage, { color: textColor }]} numberOfLines={1}>
               {item.last_message?.content || 'No messages yet'}
-            </Text>
+      </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -110,16 +124,21 @@ export default function MemberChats() {
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
-    );
+  );
   }
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
-      <View style={styles.header}>
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: borderColor }]}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={handleBackPress}
+        >
+          <Text style={[styles.backButtonText, { color: textColor }]}>← Back</Text>
+        </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: textColor }]}>Chats</Text>
-        <Text style={[styles.headerSubtitle, { color: textColor }]}>
-          Your conversations
-        </Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       {conversations.length === 0 ? (
@@ -132,13 +151,13 @@ export default function MemberChats() {
           </Text>
         </View>
       ) : (
-        <FlatList
+      <FlatList
           data={conversations}
           renderItem={renderConversation}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
-        />
+      />
       )}
     </View>
   );
@@ -149,18 +168,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  },
+  backButton: {
+    padding: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginHorizontal: 16,
   },
-  headerSubtitle: {
-    fontSize: 14,
-    opacity: 0.7,
+  headerSpacer: {
+    width: 60,
   },
   listContainer: {
     paddingBottom: 20,
