@@ -437,7 +437,7 @@ export default function ProfileScreen() {
         </Modal>
         {/* Edit Profile Modal */}
         <Modal visible={showEditModal} animationType="fade" transparent onRequestClose={() => setShowEditModal(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
+          <Pressable style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]} onPress={() => setShowEditModal(false)}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
               

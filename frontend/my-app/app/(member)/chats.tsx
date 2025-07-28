@@ -101,7 +101,7 @@ export default function MemberChats() {
           <View style={styles.conversationFooter}>
             <Text style={[styles.lastMessage, { color: textColor }]} numberOfLines={1}>
               {item.last_message?.content || 'No messages yet'}
-            </Text>
+      </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -124,7 +124,7 @@ export default function MemberChats() {
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
-    );
+  );
   }
 
   return (
@@ -151,13 +151,13 @@ export default function MemberChats() {
           </Text>
         </View>
       ) : (
-        <FlatList
+      <FlatList
           data={conversations}
           renderItem={renderConversation}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
-        />
+      />
       )}
     </View>
   );

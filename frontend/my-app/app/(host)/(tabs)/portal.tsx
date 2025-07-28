@@ -205,8 +205,8 @@ export default function PortalScreen() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please grant permission to access your photo library');
-        return;
-      }
+      return;
+    }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images',
         allowsEditing: true,
@@ -233,7 +233,7 @@ export default function PortalScreen() {
         Alert.alert('Error', 'User not found');
         return;
       }
-      
+
       console.log('Uploading to Cloudinary...');
       const cloudinaryUrl = await uploadToCloudinary(uri);
       console.log('Cloudinary upload successful:', cloudinaryUrl);
@@ -246,7 +246,7 @@ export default function PortalScreen() {
         .from('users')
         .update({ 
           background_image_url: cloudinaryUrl, 
-          updated_at: new Date().toISOString() 
+          updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
         
@@ -303,13 +303,13 @@ export default function PortalScreen() {
         const { error: updateError } = await supabase
           .from('users')
           .update(updateData)
-          .eq('id', user.id);
+        .eq('id', user.id);
 
-        if (updateError) {
-          console.error('Update error:', updateError);
-          Alert.alert('Error', 'Failed to update profile');
-          return;
-        }
+      if (updateError) {
+        console.error('Update error:', updateError);
+        Alert.alert('Error', 'Failed to update profile');
+        return;
+      }
 
         // Update local state
         if (updateData.name) setName(updateData.name);
@@ -440,15 +440,15 @@ export default function PortalScreen() {
               pathname: '/(host)/chats' as any,
               params: { from: 'portal' }
             })} style={{ padding: 8 }}>
-             <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
-           </Pressable>
+          <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
+        </Pressable>
           </View>
-        </View>
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+      </View>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
           {/* Add background image at the top, similar to profile.tsx: */}
           <View style={{ position: 'relative', height: 320, width: '100%' }}>
             <Image
@@ -507,8 +507,8 @@ export default function PortalScreen() {
                 <ActivityIndicator size="large" color="#fff" />
                 <Text style={{ color: '#fff', marginTop: 10, fontSize: 16 }}>Uploading...</Text>
               </View>
-            )}
-            
+          )}
+
             {/* Profile image and info overlays remain as before, but now on top of the background image */}
             <View style={{ position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
               <Pressable
@@ -537,168 +537,168 @@ export default function PortalScreen() {
               <View style={{ backgroundColor: '#fff', borderRadius: 14, paddingVertical: 8, paddingHorizontal: 20, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, alignItems: 'center', marginTop: 8 }}>
                 <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#222B45' }}>{subscriberCount}</Text>
                 <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>Subscriptions</Text>
-              </View>
             </View>
           </View>
+        </View>
 
-          {/* Tags Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Tags</Text>
-              <Text style={styles.sectionSubtitle}>Add up to 3 tags to describe your portal</Text>
-            </View>
+        {/* Tags Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Tags</Text>
+            <Text style={styles.sectionSubtitle}>Add up to 3 tags to describe your portal</Text>
+          </View>
+          
+          <View style={styles.tagsContainer}>
+            {tags.map(tag => (
+              <View key={tag} style={styles.tagContainer}>
+                <Text style={styles.tagText}>{tag}</Text>
+                <Pressable 
+                  style={styles.removeTagButton} 
+                  onPress={() => removeTag(tag)}
+                >
+                  <Text style={styles.removeTagText}>×</Text>
+                </Pressable>
+              </View>
+            ))}
             
-            <View style={styles.tagsContainer}>
-              {tags.map(tag => (
-                <View key={tag} style={styles.tagContainer}>
-                  <Text style={styles.tagText}>{tag}</Text>
-                  <Pressable 
-                    style={styles.removeTagButton} 
-                    onPress={() => removeTag(tag)}
-                  >
-                    <Text style={styles.removeTagText}>×</Text>
-                  </Pressable>
-                </View>
-              ))}
-              
-              {tags.length < 3 && (
-                <View style={styles.tagInputContainer}>
-                  <TextInput
-                    style={styles.tagInput}
-                    value={tagInput}
-                    onChangeText={(text) => {
-                      setTagInput(text);
-                      setShowTagSuggestions(text.length > 0);
-                    }}
-                    placeholder="Add a tag..."
-                    placeholderTextColor="#999"
-                    onSubmitEditing={() => addTag(tagInput.trim())}
-                    onFocus={() => {
-                      setShowTagSuggestions(tagInput.length > 0);
-                      fetchPopularTags();
-                    }}
-                  />
-                </View>
-              )}
-            </View>
-
-            {/* Tag Suggestions */}
-            {showTagSuggestions && tagInput.length > 0 && (
-              <View style={styles.suggestionsContainer}>
-                <FlatList
-                  data={tagSuggestions.filter(s => 
-                    s.toLowerCase().includes(tagInput.toLowerCase()) && 
-                    !tags.includes(s)
-                  ).slice(0, 5)}
-                  renderItem={({ item }) => (
-                    <Pressable 
-                      style={styles.suggestionItem}
-                      onPress={() => addTag(item)}
-                    >
-                      <Text style={styles.suggestionText}>{item}</Text>
-                    </Pressable>
-                  )}
-                  keyExtractor={item => item}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
+            {tags.length < 3 && (
+              <View style={styles.tagInputContainer}>
+                <TextInput
+                  style={styles.tagInput}
+                  value={tagInput}
+                  onChangeText={(text) => {
+                    setTagInput(text);
+                    setShowTagSuggestions(text.length > 0);
+                  }}
+                  placeholder="Add a tag..."
+                  placeholderTextColor="#999"
+                  onSubmitEditing={() => addTag(tagInput.trim())}
+                  onFocus={() => {
+                    setShowTagSuggestions(tagInput.length > 0);
+                    fetchPopularTags();
+                  }}
                 />
               </View>
             )}
           </View>
 
-          {/* Location Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Location</Text>
-              <Text style={styles.sectionSubtitle}>Set your portal's location for members to find you</Text>
+          {/* Tag Suggestions */}
+          {showTagSuggestions && tagInput.length > 0 && (
+            <View style={styles.suggestionsContainer}>
+              <FlatList
+                data={tagSuggestions.filter(s => 
+                  s.toLowerCase().includes(tagInput.toLowerCase()) && 
+                  !tags.includes(s)
+                ).slice(0, 5)}
+                renderItem={({ item }) => (
+                  <Pressable 
+                    style={styles.suggestionItem}
+                    onPress={() => addTag(item)}
+                  >
+                    <Text style={styles.suggestionText}>{item}</Text>
+                  </Pressable>
+                )}
+                keyExtractor={item => item}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              />
             </View>
-            
-            <Pressable style={styles.locationCard} onPress={openLocationModal}>
-              {location ? (
-                <View style={styles.locationInfo}>
-                  <View style={styles.locationIcon}>
-                    <Text style={styles.locationIconText}>📍</Text>
-                  </View>
-                  <View style={styles.locationTextContainer}>
-                    <Text style={styles.locationAddress}>
-                      {location.address || `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`}
-                    </Text>
-                    <Text style={styles.locationHint}>Tap to change location</Text>
-                  </View>
-                  <View style={styles.locationArrow}>
-                    <Text style={styles.arrowText}>›</Text>
-                  </View>
-                </View>
-              ) : (
-                <View style={styles.locationInfo}>
-                  <View style={styles.locationIcon}>
-                    <Text style={styles.locationIconText}>📍</Text>
-                  </View>
-                  <View style={styles.locationTextContainer}>
-                    <Text style={styles.locationPlaceholder}>Set your location</Text>
-                    <Text style={styles.locationHint}>Tap to add location</Text>
-                  </View>
-                  <View style={styles.locationArrow}>
-                    <Text style={styles.arrowText}>›</Text>
-                  </View>
-                </View>
-              )}
-            </Pressable>
+          )}
+        </View>
 
-            {/* Map Preview */}
-            {location && (
-              <View style={styles.mapContainer}>
-                <MapView
-                  style={styles.mapPreview}
-                  region={{
-                    latitude: location.lat,
-                    longitude: location.lng,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  pointerEvents="none"
-                  mapType="standard"
-                >
-                  <Marker 
-                    coordinate={{ latitude: location.lat, longitude: location.lng }}
-                    pinColor="#00b2a9"
-                  />
-                </MapView>
+        {/* Location Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Location</Text>
+            <Text style={styles.sectionSubtitle}>Set your portal's location for members to find you</Text>
+          </View>
+          
+          <Pressable style={styles.locationCard} onPress={openLocationModal}>
+            {location ? (
+              <View style={styles.locationInfo}>
+                <View style={styles.locationIcon}>
+                  <Text style={styles.locationIconText}>📍</Text>
+                </View>
+                <View style={styles.locationTextContainer}>
+                  <Text style={styles.locationAddress}>
+                    {location.address || `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`}
+                  </Text>
+                  <Text style={styles.locationHint}>Tap to change location</Text>
+                </View>
+                <View style={styles.locationArrow}>
+                  <Text style={styles.arrowText}>›</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.locationInfo}>
+                <View style={styles.locationIcon}>
+                  <Text style={styles.locationIconText}>📍</Text>
+                </View>
+                <View style={styles.locationTextContainer}>
+                  <Text style={styles.locationPlaceholder}>Set your location</Text>
+                  <Text style={styles.locationHint}>Tap to add location</Text>
+                </View>
+                <View style={styles.locationArrow}>
+                  <Text style={styles.arrowText}>›</Text>
+                </View>
               </View>
             )}
-          </View>
+          </Pressable>
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <Pressable style={styles.editButton} onPress={openEditModal}>
-              <Text style={styles.editButtonText}>Edit Profile</Text>
-            </Pressable>
-            
-            <Pressable 
-              style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
-              onPress={saveTagsAndLocation}
-              disabled={saving}
-            >
-              <Text style={styles.saveButtonText}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Text>
-            </Pressable>
-            
-            <Pressable style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutText}>Log Out</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
+          {/* Map Preview */}
+          {location && (
+            <View style={styles.mapContainer}>
+              <MapView
+                style={styles.mapPreview}
+                region={{
+                  latitude: location.lat,
+                  longitude: location.lng,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+                pointerEvents="none"
+                mapType="standard"
+              >
+                <Marker 
+                  coordinate={{ latitude: location.lat, longitude: location.lng }}
+                  pinColor="#00b2a9"
+                />
+              </MapView>
+            </View>
+          )}
+        </View>
 
-        {/* Edit Profile Modal */}
-        <Modal visible={showEditModal} animationType="slide" transparent>
-          <KeyboardAvoidingView 
-            style={styles.modalOverlay} 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <Pressable style={styles.editButton} onPress={openEditModal}>
+            <Text style={styles.editButtonText}>Edit Profile</Text>
+          </Pressable>
+          
+          <Pressable 
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
+            onPress={saveTagsAndLocation}
+            disabled={saving}
           >
-            <View style={styles.modalCenterWrap}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Edit Profile</Text>
+            <Text style={styles.saveButtonText}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Text>
+          </Pressable>
+          
+          <Pressable style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Log Out</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal visible={showEditModal} animationType="slide" transparent>
+        <KeyboardAvoidingView 
+          style={styles.modalOverlay} 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.modalCenterWrap}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
                 
                 {/* Profile Picture Section */}
                 <Text style={styles.inputLabel}>Profile Picture</Text>
@@ -718,88 +718,88 @@ export default function PortalScreen() {
                   <Text style={styles.imageEditButtonText}>Change Background Image</Text>
                 </Pressable>
                 
-                <Text style={styles.inputLabel}>Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={tempName}
-                  onChangeText={setTempName}
-                  placeholder="Enter your name"
-                  placeholderTextColor="#888"
-                  returnKeyType="next"
-                />
-                <Text style={styles.inputLabel}>Description</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={tempDescription}
-                  onChangeText={setTempDescription}
-                  placeholder="Enter your description"
-                  placeholderTextColor="#888"
-                  multiline
-                  numberOfLines={3}
-                  returnKeyType="done"
-                  blurOnSubmit={true}
-                />
-                <View style={styles.modalButtonsRow}>
-                  <Pressable 
-                    style={[styles.modalButton, styles.cancelButton]} 
-                    onPress={() => setShowEditModal(false)}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable 
-                    style={[styles.modalButton, styles.saveButton, saving && styles.saveButtonDisabled]} 
-                    onPress={saveProfile}
-                    disabled={saving}
-                  >
-                    <Text style={styles.saveButtonText}>
-                      {saving ? 'Saving...' : 'Save'}
-                    </Text>
-                  </Pressable>
-                </View>
+              <Text style={styles.inputLabel}>Name</Text>
+              <TextInput
+                style={styles.input}
+                value={tempName}
+                onChangeText={setTempName}
+                placeholder="Enter your name"
+                placeholderTextColor="#888"
+                returnKeyType="next"
+              />
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={tempDescription}
+                onChangeText={setTempDescription}
+                placeholder="Enter your description"
+                placeholderTextColor="#888"
+                multiline
+                numberOfLines={3}
+                returnKeyType="done"
+                blurOnSubmit={true}
+              />
+              <View style={styles.modalButtonsRow}>
+                <Pressable 
+                  style={[styles.modalButton, styles.cancelButton]} 
+                  onPress={() => setShowEditModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable 
+                  style={[styles.modalButton, styles.saveButton, saving && styles.saveButtonDisabled]} 
+                  onPress={saveProfile}
+                  disabled={saving}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {saving ? 'Saving...' : 'Save'}
+                  </Text>
+                </Pressable>
               </View>
             </View>
-          </KeyboardAvoidingView>
-        </Modal>
-        
-        {/* Location picker modal */}
-        <Modal visible={locationModalVisible} animationType="slide">
-          <View style={styles.locationModalContainer}>
-            <View style={styles.locationModalHeader}>
-              <Text style={styles.locationModalTitle}>Select Location</Text>
-              <Text style={styles.locationModalSubtitle}>Tap on the map to set your location</Text>
-            </View>
-            
-            <MapView
-              style={styles.locationModalMap}
-              region={mapRegion}
-              onPress={selectLocation}
-              showsUserLocation
-              showsMyLocationButton
-            >
-              {location && (
-                <Marker 
-                  coordinate={{ latitude: location.lat, longitude: location.lng }}
-                  pinColor="#00b2a9"
-                />
-              )}
-            </MapView>
-            
-            <View style={styles.locationModalButtons}>
-              <Pressable 
-                style={styles.cancelLocationButton} 
-                onPress={() => setLocationModalVisible(false)}
-              >
-                <Text style={styles.cancelLocationButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable 
-                style={styles.saveLocationButton} 
-                onPress={saveLocation}
-              >
-                <Text style={styles.saveLocationButtonText}>Save Location</Text>
-              </Pressable>
-            </View>
           </View>
-        </Modal>
+        </KeyboardAvoidingView>
+      </Modal>
+      
+      {/* Location picker modal */}
+      <Modal visible={locationModalVisible} animationType="slide">
+        <View style={styles.locationModalContainer}>
+          <View style={styles.locationModalHeader}>
+            <Text style={styles.locationModalTitle}>Select Location</Text>
+            <Text style={styles.locationModalSubtitle}>Tap on the map to set your location</Text>
+          </View>
+          
+          <MapView
+            style={styles.locationModalMap}
+            region={mapRegion}
+            onPress={selectLocation}
+            showsUserLocation
+            showsMyLocationButton
+          >
+            {location && (
+              <Marker 
+                coordinate={{ latitude: location.lat, longitude: location.lng }}
+                pinColor="#00b2a9"
+              />
+            )}
+          </MapView>
+          
+          <View style={styles.locationModalButtons}>
+            <Pressable 
+              style={styles.cancelLocationButton} 
+              onPress={() => setLocationModalVisible(false)}
+            >
+              <Text style={styles.cancelLocationButtonText}>Cancel</Text>
+            </Pressable>
+            <Pressable 
+              style={styles.saveLocationButton} 
+              onPress={saveLocation}
+            >
+              <Text style={styles.saveLocationButtonText}>Save Location</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
 
 
@@ -814,13 +814,32 @@ export default function PortalScreen() {
               <Pressable onPress={() => { setShowSettingsModal(false); handleLogout(); }} style={{ paddingVertical: 10 }}>
                 <Text style={{ fontSize: 18, color: '#FF4444', fontWeight: 'bold' }}>Log Out</Text>
               </Pressable>
-            </View>
+    </View>
           </Pressable>
         </Modal>
         <Modal visible={showEditModal} animationType="fade" transparent onRequestClose={() => setShowEditModal(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
+          <Pressable style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]} onPress={() => setShowEditModal(false)}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
+              
+              {/* Profile Picture Section */}
+              <Text style={styles.inputLabel}>Profile Picture</Text>
+              <Pressable 
+                style={styles.imageEditButton}
+                onPress={pickImage}
+              >
+                <Text style={styles.imageEditButtonText}>Change Profile Picture</Text>
+              </Pressable>
+              
+              {/* Background Image Section */}
+              <Text style={styles.inputLabel}>Background Image</Text>
+              <Pressable 
+                style={styles.imageEditButton}
+                onPress={pickBackgroundImage}
+              >
+                <Text style={styles.imageEditButtonText}>Change Background Image</Text>
+              </Pressable>
+              
               <TextInput
                 style={styles.input}
                 value={tempName}
@@ -1128,11 +1147,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   saveButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#00b2a9',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#28a745',
+    shadowColor: '#00b2a9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -1181,7 +1200,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'rgba(255,255,255,0.1)', // Adjusted for gradient
+    backgroundColor: 'transparent', // Changed from rgba(255,255,255,0.1) to transparent
     padding: 24,
     borderRadius: 20,
     width: '90%',
@@ -1214,7 +1233,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 18,
     fontSize: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)', // Adjusted for gradient
+    backgroundColor: '#fafafa',
   },
   textArea: {
     height: 100,
@@ -1232,7 +1251,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 20,
     minWidth: 90,
-    backgroundColor: 'rgba(255,255,255,0.2)', // Adjusted for gradient
+    backgroundColor: '#e0e0e0',
   },
   cancelButton: {
     backgroundColor: '#FF4444',
