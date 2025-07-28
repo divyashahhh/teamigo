@@ -179,6 +179,7 @@ export default function ProfileScreen() {
 
   const pickBackgroundImage = async () => {
     try {
+      console.log('Background image picker triggered');
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please grant permission to access your photo library');
@@ -191,9 +192,11 @@ export default function ProfileScreen() {
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0]) {
+        console.log('Background image selected:', result.assets[0].uri);
         await uploadBackgroundImage(result.assets[0].uri);
       }
     } catch (error) {
+      console.error('Error picking background image:', error);
       Alert.alert('Error', 'Failed to pick image');
     }
   };
@@ -224,30 +227,60 @@ export default function ProfileScreen() {
   };
 
   const saveProfile = async () => {
-    if (!tempName.trim()) {
-      Alert.alert('Error', 'Name cannot be empty');
+    // Only require name if it's empty (new user)
+    if (!tempName.trim() && !name.trim()) {
+      Alert.alert('Error', 'Name cannot be empty for new users');
       return;
     }
+
     try {
       setSaving(true);
+      
+      // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         Alert.alert('Error', 'User not found');
         return;
       }
-      await supabase
-        .from('users')
-        .update({ 
-          name: tempName.trim(),
-          description: tempDescription.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-      setName(tempName.trim());
-      setDescription(tempDescription.trim());
+
+      // Prepare update data - only include fields that have values
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      // Only update name if it's provided and different from current
+      if (tempName.trim() && tempName.trim() !== name) {
+        updateData.name = tempName.trim();
+      }
+
+      // Only update description if it's provided and different from current
+      if (tempDescription.trim() !== description) {
+        updateData.description = tempDescription.trim();
+      }
+
+      // Only update if there are changes
+      if (Object.keys(updateData).length > 1) { // More than just updated_at
+        const { error: updateError } = await supabase
+          .from('users')
+          .update(updateData)
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error('Update error:', updateError);
+          Alert.alert('Error', 'Failed to update profile');
+          return;
+        }
+
+        // Update local state
+        if (updateData.name) setName(updateData.name);
+        if (updateData.description) setDescription(updateData.description);
+      }
+
       setShowEditModal(false);
       Alert.alert('Success', 'Profile updated successfully!');
+      
     } catch (error) {
+      console.error('Error updating profile:', error);
       Alert.alert('Error', 'Failed to update profile');
     } finally {
       setSaving(false);
@@ -275,9 +308,12 @@ export default function ProfileScreen() {
         {/* Top bar with Settings and Chats buttons */}
         <View style={{ position: 'absolute', top: 40, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18 }}>
           <Pressable onPress={() => setShowSettingsModal(true)} style={{ padding: 8 }}>
-            <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#222B45' }} />
+            <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
           </Pressable>
-          <Pressable onPress={() => router.push('/chats')} style={{ padding: 8 }}>
+          <Pressable onPress={() => router.push({
+          pathname: '/(member)/chats' as any,
+          params: { from: 'profile' }
+        })} style={{ padding: 8 }}>
             <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
           </Pressable>
         </View>
@@ -292,12 +328,37 @@ export default function ProfileScreen() {
             colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0)']}
             style={{ position: 'absolute', width: '100%', height: 320 }}
           />
-          <Pressable
-            onPress={pickBackgroundImage}
-            style={{ position: 'absolute', width: '100%', height: 320, zIndex: 5 }}
-          >
-            {/* Empty: just for pressable area */}
-          </Pressable>
+          
+          {/* Additional gradient for text visibility */}
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
+            style={{ position: 'absolute', width: '100%', height: 320, top: 0 }}
+          />
+          
+          {/* Background pressable - excludes the profile area */}
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 5 }}>
+            {/* Top area (above profile) */}
+            <Pressable
+              onLongPress={pickBackgroundImage}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 60 }}
+            />
+            {/* Left area (left of profile) */}
+            <Pressable
+              onLongPress={pickBackgroundImage}
+              style={{ position: 'absolute', top: 60, left: 0, width: '50%', height: 100 }}
+            />
+            {/* Right area (right of profile) */}
+            <Pressable
+              onLongPress={pickBackgroundImage}
+              style={{ position: 'absolute', top: 60, right: 0, width: '50%', height: 100 }}
+            />
+            {/* Bottom area (below profile) */}
+            <Pressable
+              onLongPress={pickBackgroundImage}
+              style={{ position: 'absolute', top: 160, left: 0, right: 0, bottom: 0 }}
+            />
+          </View>
+          
           <View style={{ position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
             <Pressable
               style={{
@@ -310,8 +371,9 @@ export default function ProfileScreen() {
                 height: 100,
                 alignItems: 'center',
                 justifyContent: 'center',
+                zIndex: 7, // Higher than background pressable
               }}
-              onPress={pickImage}
+              onLongPress={pickImage}
             >
               <Image
                 source={profileImageUrl ? { uri: profileImageUrl } : require('@/assets/images/image.png')}
@@ -321,9 +383,9 @@ export default function ProfileScreen() {
             </Pressable>
             <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#fff', marginTop: 12 }}>{name}</Text>
             <Text style={{ fontSize: 16, color: '#E0E7FF', marginBottom: 8, textAlign: 'center', maxWidth: 320 }}>{description}</Text>
-            <View style={{ backgroundColor: '#fff', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 32, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, alignItems: 'center', marginTop: 8 }}>
-              <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#222B45' }}>{subscriptionCount}</Text>
-              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>Subscriptions</Text>
+            <View style={{ backgroundColor: '#fff', borderRadius: 14, paddingVertical: 8, paddingHorizontal: 20, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, alignItems: 'center', marginTop: 8 }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#222B45' }}>{subscriptionCount}</Text>
+              <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>Subscriptions</Text>
             </View>
           </View>
         </View>
@@ -335,30 +397,25 @@ export default function ProfileScreen() {
           ) : clubs.length === 0 ? (
             <Text style={{ color: '#E0E7FF', fontSize: 16 }}>You have not joined any clubs yet.</Text>
           ) : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 16 }}>
+            <View style={{ gap: 12 }}>
               {clubs.map(club => (
                 <View key={club.id} style={{
-                  width: 160,
-                  height: 180,
-                  backgroundColor: 'rgba(255,255,255,0.95)',
-                  borderRadius: 22,
-                  marginBottom: 16,
-                  marginRight: 12,
+                  backgroundColor: 'rgba(255,255,255,0.7)',
+                  borderRadius: 16,
+                  padding: 12,
+                  flexDirection: 'row',
                   alignItems: 'center',
-                  justifyContent: 'flex-start',
                   shadowColor: '#000',
                   shadowOpacity: 0.08,
                   shadowRadius: 8,
                   elevation: 2,
-                  padding: 14,
                 }}>
                   <Image
                     source={club.profile_image_url ? { uri: club.profile_image_url } : require('@/assets/images/image.png')}
-                    style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 10, marginTop: 2, backgroundColor: '#eee' }}
+                    style={{ width: 50, height: 50, borderRadius: 25, marginRight: 16, backgroundColor: '#eee' }}
                     resizeMode="cover"
                   />
-                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#222B45', textAlign: 'center', marginBottom: 4 }} numberOfLines={2}>{club.name}</Text>
-                  <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center' }} numberOfLines={2} ellipsizeMode="tail">{club.description}</Text>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#222B45', flex: 1 }} numberOfLines={1}>{club.name}</Text>
                 </View>
               ))}
             </View>
@@ -383,6 +440,25 @@ export default function ProfileScreen() {
           <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
+              
+              {/* Profile Picture Section */}
+              <Text style={styles.inputLabel}>Profile Picture</Text>
+              <Pressable 
+                style={styles.imageEditButton}
+                onPress={pickImage}
+              >
+                <Text style={styles.imageEditButtonText}>Change Profile Picture</Text>
+              </Pressable>
+              
+              {/* Background Image Section */}
+              <Text style={styles.inputLabel}>Background Image</Text>
+              <Pressable 
+                style={styles.imageEditButton}
+                onPress={pickBackgroundImage}
+              >
+                <Text style={styles.imageEditButtonText}>Change Background Image</Text>
+              </Pressable>
+              
               <TextInput
                 style={styles.input}
                 value={tempName}
@@ -610,6 +686,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
   },
   saveButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  imageEditButton: {
+    backgroundColor: '#00b2a9',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  imageEditButtonText: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,

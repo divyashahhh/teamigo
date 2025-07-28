@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { chatService } from '../services/chatService';
@@ -27,6 +28,7 @@ export default function ChatThread() {
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const textInputRef = useRef<TextInput>(null);
   const router = useRouter();
 
   const backgroundColor = useThemeColor({}, 'background');
@@ -43,7 +45,16 @@ export default function ChatThread() {
 
     loadConversation();
     loadMessages();
-    setupMessageListener();
+    
+    // Set up real-time subscription
+    const subscription = setupMessageListener();
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, [conversationId]);
 
   const loadConversation = async () => {
@@ -67,7 +78,13 @@ export default function ChatThread() {
     try {
       setLoading(true);
       const conversationMessages = await chatService.getConversationMessages(conversationId);
+      console.log('Loaded messages:', conversationMessages.length);
       setMessages(conversationMessages);
+      
+      // Auto-scroll to bottom after messages are loaded
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 100);
     } catch (err) {
       console.error('Error loading messages:', err);
       Alert.alert('Error', 'Failed to load messages');
@@ -77,11 +94,17 @@ export default function ChatThread() {
   };
 
   const setupMessageListener = () => {
-    const unsubscribe = chatService.subscribeToMessages(conversationId, (updatedMessages: ChatMessage[]) => {
+    const subscription = chatService.subscribeToMessages(conversationId, (updatedMessages: ChatMessage[]) => {
+      console.log('Real-time message update received:', updatedMessages.length, 'messages');
       setMessages(updatedMessages);
+      
+      // Auto-scroll to bottom when new messages arrive
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     });
 
-    return unsubscribe;
+    return subscription;
   };
 
   const sendMessage = async () => {
@@ -89,8 +112,30 @@ export default function ChatThread() {
 
     try {
       setSending(true);
+      console.log('Sending message:', newMessage.trim());
       await chatService.sendMessage(conversationId, newMessage.trim());
       setNewMessage('');
+      
+      // Manual refresh as fallback if real-time isn't working
+      setTimeout(async () => {
+        try {
+          const updatedMessages = await chatService.getConversationMessages(conversationId);
+          console.log('Manual refresh - loaded messages:', updatedMessages.length);
+          setMessages(updatedMessages);
+          
+          // Auto-scroll to bottom after manual refresh
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        } catch (err) {
+          console.error('Error in manual refresh:', err);
+        }
+      }, 500);
+      
+      // Scroll to bottom after sending
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     } catch (err) {
       console.error('Error sending message:', err);
       Alert.alert('Error', 'Failed to send message');
@@ -153,6 +198,7 @@ export default function ChatThread() {
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: borderColor }]}>
@@ -174,13 +220,30 @@ export default function ChatThread() {
         style={styles.messagesList}
         contentContainerStyle={styles.messagesContainer}
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        onContentSizeChange={() => {
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: false });
+          }, 50);
+        }}
+        onLayout={() => {
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: false });
+          }, 50);
+        }}
+        keyboardShouldPersistTaps="handled"
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 10,
+        }}
+        initialNumToRender={20}
+        maxToRenderPerBatch={10}
+        windowSize={10}
       />
 
       {/* Message Input */}
       <View style={[styles.inputContainer, { borderTopColor: borderColor }]}>
         <TextInput
+          ref={textInputRef}
           style={[styles.textInput, {
             backgroundColor: cardBackground,
             color: textColor,
@@ -192,6 +255,11 @@ export default function ChatThread() {
           onChangeText={setNewMessage}
           multiline
           maxLength={1000}
+          onFocus={() => {
+            setTimeout(() => {
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+          }}
         />
         <TouchableOpacity
           style={[
@@ -246,6 +314,7 @@ const styles = StyleSheet.create({
   messagesContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    paddingBottom: 20,
   },
   messageContainer: {
     marginVertical: 4,
@@ -278,6 +347,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
+    backgroundColor: 'transparent',
   },
   textInput: {
     flex: 1,
@@ -287,6 +357,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     maxHeight: 100,
     marginRight: 8,
+    fontSize: 16,
   },
   sendButton: {
     backgroundColor: '#007AFF',

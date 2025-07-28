@@ -47,21 +47,40 @@ class ChatService {
     const currentUser = await this.getCurrentUser();
     if (!currentUser) throw new Error('User not authenticated');
 
-    const { error } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: conversationId,
-        sender_id: currentUser.id,
-        content
-      });
+    console.log('Inserting message:', { conversationId, content, senderId: currentUser.id });
 
-    if (error) throw error;
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: currentUser.id,
+          content
+        })
+        .select();
 
-    // Update conversation's updated_at timestamp
-    await supabase
-      .from('conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId);
+      if (error) {
+        console.error('Error inserting message:', error);
+        throw error;
+      }
+
+      console.log('Message inserted successfully:', data);
+
+      // Update conversation's updated_at timestamp
+      const { error: updateError } = await supabase
+        .from('conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      if (updateError) {
+        console.error('Error updating conversation timestamp:', updateError);
+      } else {
+        console.log('Conversation timestamp updated successfully');
+      }
+    } catch (err) {
+      console.error('Exception in sendMessage:', err);
+      throw err;
+    }
   }
 
   // Get user conversations with last message and other user details
@@ -158,7 +177,9 @@ class ChatService {
 
   // Subscribe to conversation messages (for real-time updates)
   subscribeToMessages(conversationId: string, callback: (messages: ChatMessage[]) => void) {
-    return supabase
+    console.log('Setting up real-time subscription for conversation:', conversationId);
+    
+    const channel = supabase
       .channel(`messages:${conversationId}`)
       .on(
         'postgres_changes',
@@ -168,13 +189,30 @@ class ChatService {
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`
         },
-        async () => {
-          // Fetch updated messages
-          const messages = await this.getConversationMessages(conversationId);
-          callback(messages);
+        async (payload) => {
+          console.log('Real-time message change detected:', payload);
+          try {
+            // Fetch updated messages
+            const messages = await this.getConversationMessages(conversationId);
+            console.log('Fetched updated messages:', messages.length);
+            callback(messages);
+          } catch (error) {
+            console.error('Error in real-time callback:', error);
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to real-time messages');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Channel subscription error');
+        } else if (status === 'TIMED_OUT') {
+          console.error('Channel subscription timed out');
+        }
+      });
+
+    return channel;
   }
 
   // Subscribe to user conversations (for real-time updates)

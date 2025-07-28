@@ -10,7 +10,7 @@ import MapView, { Marker, Region, MapPressEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as FileSystem from 'expo-file-system';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AnalyticsModal } from './analytics';
+
 
 const { width } = Dimensions.get('window');
 
@@ -55,7 +55,7 @@ export default function PortalScreen() {
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const [role, setRole] = useState('member');
   const router = useRouter();
-  const [analyticsVisible, setAnalyticsVisible] = useState(false);
+
   // 1. Add state for backgroundImageUrl:
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
   // Add the settings modal and edit profile modal, matching profile.tsx
@@ -201,6 +201,7 @@ export default function PortalScreen() {
   // 3. Add pickBackgroundImage and uploadBackgroundImage functions (copy from profile.tsx, but update for portal):
   const pickBackgroundImage = async () => {
     try {
+      console.log('Background image picker triggered');
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please grant permission to access your photo library');
@@ -213,37 +214,62 @@ export default function PortalScreen() {
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0]) {
+        console.log('Background image selected:', result.assets[0].uri);
         await uploadBackgroundImage(result.assets[0].uri);
       }
     } catch (error) {
+      console.error('Error picking background image:', error);
       Alert.alert('Error', 'Failed to pick image');
     }
   };
   const uploadBackgroundImage = async (uri: string) => {
     try {
       setSaving(true);
+      console.log('Starting background image upload...');
+      
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
+        console.error('User error:', userError);
         Alert.alert('Error', 'User not found');
-      return;
+        return;
       }
+      
+      console.log('Uploading to Cloudinary...');
       const cloudinaryUrl = await uploadToCloudinary(uri);
+      console.log('Cloudinary upload successful:', cloudinaryUrl);
+      
+      // Update local state immediately for better UX
       setBackgroundImageUrl(cloudinaryUrl + '?t=' + Date.now());
-      await supabase
+      
+      console.log('Updating database...');
+      const { error: updateError } = await supabase
         .from('users')
-        .update({ background_image_url: cloudinaryUrl, updated_at: new Date().toISOString() })
+        .update({ 
+          background_image_url: cloudinaryUrl, 
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', user.id);
+        
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        Alert.alert('Error', 'Failed to save background image to database');
+        return;
+      }
+      
+      console.log('Background image update successful');
       Alert.alert('Success', 'Background image updated!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to upload image');
+      console.error('Background image upload error:', error);
+      Alert.alert('Error', 'Failed to upload background image');
     } finally {
       setSaving(false);
     }
   };
 
   const saveProfile = async () => {
-    if (!tempName.trim()) {
-      Alert.alert('Error', 'Name cannot be empty');
+    // Only require name if it's empty (new user)
+    if (!tempName.trim() && !name.trim()) {
+      Alert.alert('Error', 'Name cannot be empty for new users');
       return;
     }
 
@@ -257,24 +283,39 @@ export default function PortalScreen() {
         return;
       }
 
-      // Update profile
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ 
-          name: tempName.trim(),
-          description: tempDescription.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      // Prepare update data - only include fields that have values
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
 
-      if (updateError) {
-        console.error('Update error:', updateError);
-        Alert.alert('Error', 'Failed to update profile');
-        return;
+      // Only update name if it's provided and different from current
+      if (tempName.trim() && tempName.trim() !== name) {
+        updateData.name = tempName.trim();
       }
 
-      setName(tempName.trim());
-      setDescription(tempDescription.trim());
+      // Only update description if it's provided and different from current
+      if (tempDescription.trim() !== description) {
+        updateData.description = tempDescription.trim();
+      }
+
+      // Only update if there are changes
+      if (Object.keys(updateData).length > 1) { // More than just updated_at
+        const { error: updateError } = await supabase
+          .from('users')
+          .update(updateData)
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error('Update error:', updateError);
+          Alert.alert('Error', 'Failed to update profile');
+          return;
+        }
+
+        // Update local state
+        if (updateData.name) setName(updateData.name);
+        if (updateData.description) setDescription(updateData.description);
+      }
+
       setShowEditModal(false);
       Alert.alert('Success', 'Profile updated successfully!');
       
@@ -389,18 +430,18 @@ export default function PortalScreen() {
     <LinearGradient colors={['#1A237E', '#222B45', '#0A0F2C']} style={{ flex: 1 }}>
       <View style={[styles.mainContainer, { backgroundColor: 'transparent' }]}>
         {/* Remove the header with chats and analytics buttons at the top right */}
-        {/* Add a top bar with settings on the left and chats/analytics on the right */}
+        {/* Add a top bar with settings on the left and chats on the right */}
         <View style={{ position: 'absolute', top: 40, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18 }}>
           <Pressable onPress={() => setShowSettingsModal(true)} style={{ padding: 8 }}>
-            <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#222B45' }} />
+            <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
           </Pressable>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-                       <Pressable onPress={() => router.push('/(host)/chats')} style={{ padding: 8 }}>
+            <Pressable onPress={() => router.push({
+              pathname: '/(host)/chats' as any,
+              params: { from: 'portal' }
+            })} style={{ padding: 8 }}>
              <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
            </Pressable>
-            <Pressable onPress={() => setAnalyticsVisible(true)} style={{ padding: 8 }}>
-              <Text style={{ fontSize: 24, color: '#00b2a9' }}>📊</Text>
-            </Pressable>
           </View>
         </View>
         <ScrollView 
@@ -419,12 +460,55 @@ export default function PortalScreen() {
               colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0)']}
               style={{ position: 'absolute', width: '100%', height: 320 }}
             />
-            <Pressable
-              onPress={pickBackgroundImage}
-              style={{ position: 'absolute', width: '100%', height: 320, zIndex: 2 }}
-            >
-              {/* Empty: just for pressable area */}
-            </Pressable>
+            
+            {/* Additional gradient for text visibility */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
+              style={{ position: 'absolute', width: '100%', height: 320, top: 0 }}
+            />
+            
+            {/* Background pressable - excludes the profile area */}
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 5 }}>
+              {/* Top area (above profile) */}
+              <Pressable
+                onLongPress={pickBackgroundImage}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 60 }}
+              />
+              {/* Left area (left of profile) */}
+              <Pressable
+                onLongPress={pickBackgroundImage}
+                style={{ position: 'absolute', top: 60, left: 0, width: '50%', height: 100 }}
+              />
+              {/* Right area (right of profile) */}
+              <Pressable
+                onLongPress={pickBackgroundImage}
+                style={{ position: 'absolute', top: 60, right: 0, width: '50%', height: 100 }}
+              />
+              {/* Bottom area (below profile) */}
+              <Pressable
+                onLongPress={pickBackgroundImage}
+                style={{ position: 'absolute', top: 160, left: 0, right: 0, bottom: 0 }}
+              />
+            </View>
+            
+            {/* Show loading indicator when saving */}
+            {saving && (
+              <View style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 6
+              }}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={{ color: '#fff', marginTop: 10, fontSize: 16 }}>Uploading...</Text>
+              </View>
+            )}
+            
             {/* Profile image and info overlays remain as before, but now on top of the background image */}
             <View style={{ position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
               <Pressable
@@ -438,8 +522,9 @@ export default function PortalScreen() {
                   height: 100,
                   alignItems: 'center',
                   justifyContent: 'center',
+                  zIndex: 7, // Higher than background pressable
                 }}
-                onPress={pickImage}
+                onLongPress={pickImage}
               >
                 <Image
                   source={profileImageUrl ? { uri: profileImageUrl } : require('@/assets/images/image.png')}
@@ -449,9 +534,9 @@ export default function PortalScreen() {
               </Pressable>
               <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#fff', marginTop: 12 }}>{name}</Text>
               <Text style={{ fontSize: 16, color: '#E0E7FF', marginBottom: 8, textAlign: 'center', maxWidth: 320 }}>{description}</Text>
-              <View style={{ backgroundColor: '#fff', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 32, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, alignItems: 'center', marginTop: 8 }}>
-                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#222B45' }}>{subscriberCount}</Text>
-                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>Subscriptions</Text>
+              <View style={{ backgroundColor: '#fff', borderRadius: 14, paddingVertical: 8, paddingHorizontal: 20, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, alignItems: 'center', marginTop: 8 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#222B45' }}>{subscriberCount}</Text>
+                <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>Subscriptions</Text>
               </View>
             </View>
           </View>
@@ -614,6 +699,25 @@ export default function PortalScreen() {
             <View style={styles.modalCenterWrap}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Edit Profile</Text>
+                
+                {/* Profile Picture Section */}
+                <Text style={styles.inputLabel}>Profile Picture</Text>
+                <Pressable 
+                  style={styles.imageEditButton}
+                  onPress={pickImage}
+                >
+                  <Text style={styles.imageEditButtonText}>Change Profile Picture</Text>
+                </Pressable>
+                
+                {/* Background Image Section */}
+                <Text style={styles.inputLabel}>Background Image</Text>
+                <Pressable 
+                  style={styles.imageEditButton}
+                  onPress={pickBackgroundImage}
+                >
+                  <Text style={styles.imageEditButtonText}>Change Background Image</Text>
+                </Pressable>
+                
                 <Text style={styles.inputLabel}>Name</Text>
                 <TextInput
                   style={styles.input}
@@ -697,10 +801,7 @@ export default function PortalScreen() {
           </View>
         </Modal>
 
-        {/* Analytics Modal */}
-        <Modal visible={analyticsVisible} animationType="slide" onRequestClose={() => setAnalyticsVisible(false)}>
-          <AnalyticsModal onClose={() => setAnalyticsVisible(false)} />
-        </Modal>
+
 
         {/* Add the settings modal and edit profile modal, matching profile.tsx */}
         <Modal visible={showSettingsModal} animationType="fade" transparent onRequestClose={() => setShowSettingsModal(false)}>
@@ -1140,6 +1241,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
+  },
+
+  // Image Edit Buttons
+  imageEditButton: {
+    backgroundColor: '#00b2a9',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  imageEditButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
   },
 
   // Location Modal
