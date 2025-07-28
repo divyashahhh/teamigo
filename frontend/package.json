@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@babel/preset-typescript": "^7.27.1",
+    "babel-jest": "^30.0.5",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.0"
+  }
+}

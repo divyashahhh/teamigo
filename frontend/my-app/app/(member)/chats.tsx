@@ -1,118 +1,145 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
-  TextInput,
-  Pressable,
-  Alert,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
-import { supabase } from '@/utils/supabaseClient';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { chatService } from '../../services/chatService';
+import { ChatConversation } from '../../types/chat';
+import { useThemeColor } from '../../hooks/useThemeColor';
 
-export default function ChatsScreen() {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [chats, setChats] = useState<any[]>([]);
-  const [searchEmail, setSearchEmail] = useState('');
-  const [loading, setLoading] = useState(false);
+export default function MemberChats() {
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const borderColor = useThemeColor({}, 'border');
 
   useEffect(() => {
-    const getUserAndChats = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
-        router.replace('/auth/login');
-        return;
-      }
-      setUserId(user.id);
-      fetchChats(user.id);
-    };
-    getUserAndChats();
+    loadConversations();
   }, []);
 
-  const fetchChats = async (uid: string) => {
-    const { data, error } = await supabase
-      .from('chats')
-      .select('*')
-      .contains('participant_ids', [uid]);
-    if (error) {
-      console.error('Fetch Chats Error:', error.message);
-    } else {
-      setChats(data || []);
+  const loadConversations = async () => {
+    try {
+      setLoading(true);
+      const userConversations = await chatService.getUserConversations();
+      setConversations(userConversations);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load conversations');
+      console.error('Error loading conversations:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const createChatWithUser = async () => {
-    if (!searchEmail.trim() || !userId) {
-      Alert.alert('Error', 'Please enter a valid email');
-      return;
-    }
-    setLoading(true);
-    const { data: targetUser, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', searchEmail.trim())
-      .single();
-    if (userError || !targetUser) {
-      Alert.alert('User Not Found', 'No user with this email');
-      setLoading(false);
-      return;
-    }
-    if (targetUser.id === userId) {
-      Alert.alert('Error', 'Cannot chat with yourself');
-      setLoading(false);
-      return;
-    }
-    const { error: chatError } = await supabase
-      .from('chats')
-      .insert({
-        participant_ids: [userId, targetUser.id],
-      });
-    if (chatError) {
-      console.error('Create Chat Error:', chatError.message);
-      Alert.alert('Error', 'Failed to create chat');
-    } else {
-      Alert.alert('Success', 'Chat created');
-      fetchChats(userId);
-    }
-    setLoading(false);
-    setSearchEmail('');
+  const handleConversationPress = (conversation: ChatConversation) => {
+    router.push({
+      pathname: '/(member)/chat_thread' as any,
+      params: { conversationId: conversation.id }
+    });
   };
 
-  const renderChat = ({ item }: { item: any }) => (
-    <Pressable
-      style={styles.chatItem}
-      onPress={() => router.push(`/chats/${item.id}` as any)}
-    >
-      <Text style={styles.chatText}>
-        Chat ID: {item.id}
-      </Text>
-    </Pressable>
-  );
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const renderConversation = ({ item }: { item: ChatConversation }) => {
+    const otherUser = item.other_user;
+    if (!otherUser) return null;
+
+    return (
+      <TouchableOpacity
+        style={[styles.conversationItem, { borderBottomColor: borderColor }]}
+        onPress={() => handleConversationPress(item)}
+      >
+        <View style={styles.avatarContainer}>
+          {otherUser.profile_image_url ? (
+            <Image source={{ uri: otherUser.profile_image_url }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatarPlaceholder, { backgroundColor: '#ddd' }]}>
+              <Text style={styles.avatarText}>
+                {otherUser.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.conversationContent}>
+          <View style={styles.conversationHeader}>
+            <Text style={[styles.userName, { color: textColor }]} numberOfLines={1}>
+              {otherUser.name}
+            </Text>
+            <Text style={[styles.timeText, { color: textColor }]}>
+              {item.last_message ? formatTime(item.last_message.created_at) : ''}
+            </Text>
+          </View>
+          
+          <View style={styles.conversationFooter}>
+            <Text style={[styles.lastMessage, { color: textColor }]} numberOfLines={1}>
+              {item.last_message?.content || 'No messages yet'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor }]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, { backgroundColor }]}>
+        <Text style={[styles.errorText, { color: textColor }]}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={loadConversations}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      {/* Back Button */}
-      <Pressable onPress={() => router.replace('/(member)/(tabs)/profile')} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={28} color="#FFD700" />
-        <Text style={styles.backText}>Back</Text>
-      </Pressable>
-      <Text style={styles.title}>My Chats</Text>
-      <TextInput
-        placeholder="Enter user email to chat"
-        value={searchEmail}
-        onChangeText={setSearchEmail}
-        style={styles.input}
-      />
-      <Pressable onPress={createChatWithUser} style={styles.addButton}>
-        <Text style={styles.addText}>{loading ? 'Creating...' : 'Start Chat'}</Text>
-      </Pressable>
-      <FlatList
-        data={chats}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderChat}
-      />
+    <View style={[styles.container, { backgroundColor }]}>
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: textColor }]}>Chats</Text>
+        <Text style={[styles.headerSubtitle, { color: textColor }]}>
+          Your conversations
+        </Text>
+      </View>
+
+      {conversations.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyText, { color: textColor }]}>
+            No conversations yet
+          </Text>
+          <Text style={[styles.emptySubtext, { color: textColor }]}>
+            Start chatting with hosts from their portal pages
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={conversations}
+          renderItem={renderConversation}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
     </View>
   );
 }
@@ -120,52 +147,110 @@ export default function ChatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#002233',
   },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    padding: 8,
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
-  backText: {
-    color: '#FFD700',
-    fontSize: 18,
-    marginLeft: 6,
-    fontWeight: '600',
-  },
-  title: {
-    color: '#FFD700',
+  headerTitle: {
     fontSize: 24,
-    marginBottom: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  listContainer: {
+    paddingBottom: 20,
+  },
+  conversationItem: {
+    flexDirection: 'row',
+    padding: 16,
+    borderBottomWidth: 1,
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    marginRight: 12,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  avatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#666',
+  },
+  conversationContent: {
+    flex: 1,
+  },
+  conversationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  timeText: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  conversationFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  lastMessage: {
+    fontSize: 14,
+    opacity: 0.8,
+    flex: 1,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
     textAlign: 'center',
   },
-  input: {
-    backgroundColor: '#10364A',
-    color: '#FFFFFF',
-    padding: 12,
+  emptySubtext: {
+    fontSize: 14,
+    opacity: 0.7,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 8,
-    marginBottom: 10,
   },
-  addButton: {
-    backgroundColor: '#00AFAF',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  addText: {
-    color: '#fff',
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
     fontWeight: '600',
-  },
-  chatItem: {
-    backgroundColor: '#092A3D',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  chatText: {
-    color: '#FFFFFF',
   },
 }); 
