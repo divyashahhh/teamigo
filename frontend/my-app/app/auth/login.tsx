@@ -46,7 +46,6 @@ export default function LoginScreen(): React.JSX.Element {
         return;
       }
 
-      // Sync email_verified in public.users if verified
       await supabase
         .from('users')
         .update({ email_verified: true })
@@ -64,7 +63,6 @@ export default function LoginScreen(): React.JSX.Element {
         return;
       }
 
-      // If user does not exist in public.users, insert
       if (!existingUser) {
         const insertRole = user.user_metadata?.role || 'member';
 
@@ -84,7 +82,6 @@ export default function LoginScreen(): React.JSX.Element {
         }
       }
 
-      // Save role to local storage
       const finalRole = existingUser?.role || user.user_metadata?.role || 'member';
       await AsyncStorage.setItem('userRole', finalRole);
       if (rememberMe) {
@@ -95,7 +92,6 @@ export default function LoginScreen(): React.JSX.Element {
 
       Alert.alert('Login Successful', `Welcome back, ${finalRole}!`);
 
-      // Navigate based on role
       if (finalRole === 'host') {
         router.replace('/portal');
       } else {

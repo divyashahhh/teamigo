@@ -5,35 +5,28 @@ export function useColorScheme(): 'light' | 'dark' {
   return colorScheme ?? 'light';
 }
 
-// Theme colors from login/signup pages
 export const lightTheme = {
-  // Main backgrounds
   background: '#FFFFFF',
   darkBackground: '#002233',
   cardBackground: '#092A3D',
   inputBackground: '#10364A',
   
-  // Text colors
   text: '#FFFFFF',
   subtitle: '#B0BEC5',
   muted: '#445E6B',
   
-  // Brand colors
   primary: '#00AFAF',
-  secondary: '#FFD700', // Gold accent
+  secondary: '#FFD700',
   accent: '#FFD86E',
   
-  // Status colors
   error: '#FF4444',
   success: '#32D48E',
   warning: '#FFD700',
   
-  // UI elements
   border: '#445E6B',
   divider: '#445E6B',
   icon: '#FFFFFF',
   
-  // Component specific
   buttonText: '#FFFFFF',
   buttonBackground: '#00AFAF',
   inputBorder: '#445E6B',
@@ -41,33 +34,27 @@ export const lightTheme = {
 };
 
 export const darkTheme = {
-  // Main backgrounds
   background: '#002233',
   darkBackground: '#002233',
   cardBackground: '#092A3D',
   inputBackground: '#10364A',
   
-  // Text colors
   text: '#FFFFFF',
   subtitle: '#B0BEC5',
   muted: '#445E6B',
   
-  // Brand colors
   primary: '#00AFAF',
-  secondary: '#FFD700', // Gold accent
+  secondary: '#FFD700',
   accent: '#FFD86E',
   
-  // Status colors
   error: '#FF4444',
   success: '#32D48E',
   warning: '#FFD700',
   
-  // UI elements
   border: '#445E6B',
   divider: '#445E6B',
   icon: '#FFFFFF',
   
-  // Component specific
   buttonText: '#FFFFFF',
   buttonBackground: '#00AFAF',
   inputBorder: '#445E6B',

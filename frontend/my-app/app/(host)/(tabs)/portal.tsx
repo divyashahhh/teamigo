@@ -56,9 +56,7 @@ export default function PortalScreen() {
   const [role, setRole] = useState('member');
   const router = useRouter();
 
-  // 1. Add state for backgroundImageUrl:
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null);
-  // Add the settings modal and edit profile modal, matching profile.tsx
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   useEffect(() => {
@@ -75,7 +73,6 @@ export default function PortalScreen() {
     try {
       setLoading(true);
       
-      // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
@@ -84,7 +81,6 @@ export default function PortalScreen() {
         return;
       }
 
-      // Fetch user profile from profiles table
       const { data: profileData, error: profileError } = await supabase
         .from('users')
         .select('*')
@@ -97,7 +93,6 @@ export default function PortalScreen() {
         return;
       }
 
-      // Set profile data
       setName(profileData.name || '');
       setDescription(profileData.description || '');
       setProfileImageUrl(profileData.profile_image_url);
@@ -109,7 +104,6 @@ export default function PortalScreen() {
           : null
       );
       setRole(profileData.role || 'member');
-      // 2. In fetchUserProfile, set backgroundImageUrl:
       setBackgroundImageUrl(profileData.background_image_url ? profileData.background_image_url + '?t=' + Date.now() : null);
       console.log('Fetched profileImageUrl:', profileData.profile_image_url);
       
@@ -123,7 +117,6 @@ export default function PortalScreen() {
 
   const handleLogout = async () => {
     try {
-      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -133,7 +126,6 @@ export default function PortalScreen() {
       }
 
       console.log('Logged out successfully');
-      // Navigate to login screen
       router.replace('/auth/login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -143,14 +135,12 @@ export default function PortalScreen() {
 
   const pickImage = async () => {
     try {
-      // Request permissions
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please grant permission to access your photo library');
         return;
       }
 
-      // Try fallback to 'images' string for mediaTypes
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images',
         allowsEditing: true,
@@ -198,13 +188,11 @@ export default function PortalScreen() {
     }
   };
 
-  // 3. Add pickBackgroundImage and uploadBackgroundImage functions (copy from profile.tsx, but update for portal):
   const pickBackgroundImage = async () => {
     try {
       console.log('Background image picker triggered');
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant permission to access your photo library');
       return;
     }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -276,30 +264,25 @@ export default function PortalScreen() {
     try {
       setSaving(true);
       
-      // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         Alert.alert('Error', 'User not found');
         return;
       }
 
-      // Prepare update data - only include fields that have values
       const updateData: any = {
         updated_at: new Date().toISOString()
       };
 
-      // Only update name if it's provided and different from current
       if (tempName.trim() && tempName.trim() !== name) {
         updateData.name = tempName.trim();
       }
 
-      // Only update description if it's provided and different from current
       if (tempDescription.trim() !== description) {
         updateData.description = tempDescription.trim();
       }
 
-      // Only update if there are changes
-      if (Object.keys(updateData).length > 1) { // More than just updated_at
+      if (Object.keys(updateData).length > 1) {
         const { error: updateError } = await supabase
           .from('users')
           .update(updateData)
@@ -311,7 +294,6 @@ export default function PortalScreen() {
         return;
       }
 
-        // Update local state
         if (updateData.name) setName(updateData.name);
         if (updateData.description) setDescription(updateData.description);
       }
@@ -333,13 +315,11 @@ export default function PortalScreen() {
     setShowEditModal(true);
   };
 
-  // Fetch popular tags for suggestions
   const fetchPopularTags = async () => {
     const { data, error } = await supabase.rpc('get_popular_tags');
     if (!error && data) setTagSuggestions(data);
   };
 
-  // Add tag
   const addTag = (tag: string) => {
     if (tags.length < 3 && tag && !tags.includes(tag)) {
       setTags([...tags, tag]);
@@ -348,10 +328,8 @@ export default function PortalScreen() {
     }
   };
 
-  // Remove tag
   const removeTag = (tag: string) => setTags(tags.filter(t => t !== tag));
 
-  // Save tags/location to Supabase
   const saveTagsAndLocation = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -377,7 +355,6 @@ export default function PortalScreen() {
     Alert.alert('Success', 'Tags and location updated!');
   };
 
-  // Map/location picker logic
   const openLocationModal = async () => {
     setLocationModalVisible(true);
     // Get current location for map center

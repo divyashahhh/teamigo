@@ -45,7 +45,6 @@ export default function SignupScreen(): React.JSX.Element {
         console.log('User created successfully in auth:', data.user.id);
         console.log('User metadata:', data.user.user_metadata);
 
-        // Insert into public.users
         const { error: insertError } = await supabase
           .from('users')
           .insert({
@@ -57,7 +56,6 @@ export default function SignupScreen(): React.JSX.Element {
 
         if (insertError) {
           console.error('Error inserting new user into users table:', insertError);
-          // Optionally alert user, but don't block signup flow
         }
         
         await new Promise(resolve => setTimeout(resolve, 1200));

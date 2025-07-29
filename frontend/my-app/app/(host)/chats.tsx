@@ -32,7 +32,6 @@ export default function HostChats() {
     try {
       setLoading(true);
       const userConversations = await chatService.getUserConversations();
-      // Filter out conversations with no messages
       const conversationsWithMessages = userConversations.filter(conv => conv.last_message);
       setConversations(conversationsWithMessages);
       setError(null);
@@ -55,7 +54,6 @@ export default function HostChats() {
     if (from === 'portal') {
       router.back();
     } else {
-      // Default fallback
       router.push('/(host)/(tabs)/portal' as any);
     }
   };
