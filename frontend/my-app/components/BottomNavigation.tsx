@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 16,
-    paddingBottom: 20, // Extra padding for safe area
+    paddingBottom: 20,
   },
   tabItem: {
     alignItems: 'center',

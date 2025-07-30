@@ -46,10 +46,8 @@ export default function ChatThread() {
     loadConversation();
     loadMessages();
     
-    // Set up real-time subscription
     const subscription = setupMessageListener();
 
-    // Cleanup subscription on unmount
     return () => {
       if (subscription) {
         subscription.unsubscribe();
@@ -63,7 +61,6 @@ export default function ChatThread() {
       if (!user) throw new Error('User not authenticated');
       setCurrentUserId(user.id);
 
-      // Get conversation details
       const conversations = await chatService.getUserConversations();
       const currentConversation = conversations.find((c: ChatConversation) => c.id === conversationId);
       if (currentConversation) {
@@ -81,7 +78,6 @@ export default function ChatThread() {
       console.log('Loaded messages:', conversationMessages.length);
       setMessages(conversationMessages);
       
-      // Auto-scroll to bottom after messages are loaded
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: false });
       }, 100);
@@ -98,7 +94,6 @@ export default function ChatThread() {
       console.log('Real-time message update received:', updatedMessages.length, 'messages');
       setMessages(updatedMessages);
       
-      // Auto-scroll to bottom when new messages arrive
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -116,14 +111,12 @@ export default function ChatThread() {
       await chatService.sendMessage(conversationId, newMessage.trim());
       setNewMessage('');
       
-      // Manual refresh as fallback if real-time isn't working
       setTimeout(async () => {
         try {
           const updatedMessages = await chatService.getConversationMessages(conversationId);
           console.log('Manual refresh - loaded messages:', updatedMessages.length);
           setMessages(updatedMessages);
           
-          // Auto-scroll to bottom after manual refresh
           setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
           }, 100);
@@ -132,7 +125,6 @@ export default function ChatThread() {
         }
       }, 500);
       
-      // Scroll to bottom after sending
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);

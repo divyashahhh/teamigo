@@ -8,19 +8,9 @@ import Onboarding from '../onboarding/onboarding';
 
 const { width } = Dimensions.get('window');
 
-// OnboardingScreen wrapper to add Login/Signup buttons on last slide
 function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [page, setPage] = useState(0);
-  // const scrollRef = useRef<any>(null); // Not needed since we don't use ref
 
-  // Copy onboardingData from onboarding.tsx for button logic
-  // const onboardingData = [
-  //   { title: 'Welcome to Teamigo!' },
-  //   { title: 'Effortless!' },
-  //   { title: 'Join and Grow!' },
-  // ];
-
-  // Render onboarding with custom buttons on last slide
   return (
     <View style={{ flex: 1 }}>
       <OnboardingWithButtons
@@ -32,13 +22,7 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-// Custom onboarding with Login/Signup buttons on last slide
 function OnboardingWithButtons({ page, setPage, onComplete }: any) {
-  // const onboardingData = [
-  //   { title: 'Welcome to Teamigo!' },
-  //   { title: 'Effortless!' },
-  //   { title: 'Join and Grow!' },
-  // ];
   return (
     <View style={{ flex: 1 }}>
       <Onboarding
@@ -80,7 +64,6 @@ export default function Index() {
     try {
       setLoading(true);
       setError(null);
-      // Check if user wants to be remembered
       const rememberMe = await AsyncStorage.getItem('rememberMe');
       const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
       if (!rememberMe && !onboardingComplete) {
@@ -88,7 +71,6 @@ export default function Index() {
         setLoading(false);
         return;
       }
-      // Add a timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Auth check timeout')), 8000)
       );
@@ -166,7 +148,6 @@ export default function Index() {
     checkLoginStatus();
   };
 
-  // Custom onboarding logic
   if (showOnboarding) {
     return <OnboardingScreen onComplete={async () => {
       await AsyncStorage.setItem('onboardingComplete', 'true');

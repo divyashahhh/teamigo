@@ -79,7 +79,6 @@ export default function MerchSetupScreen() {
     }
     setLoading(true);
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not found');
       let imageUrl = null;
@@ -93,7 +92,6 @@ export default function MerchSetupScreen() {
       if (paymentOption === 'number' && phoneNumber) {
         paymentDetails.phone = phoneNumber;
       }
-      // Insert into merchandise table
       const { error: insertError } = await supabase
         .from('merchandise')
         .insert({

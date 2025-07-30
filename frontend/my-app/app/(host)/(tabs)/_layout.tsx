@@ -62,7 +62,7 @@ export default function HostTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="analytics" // replaced 'maps' with 'analytics'
+        name="analytics"
         options={{
           tabBarIcon: ({ focused }) => (
             <Animated.View

@@ -28,7 +28,6 @@ export default function HostAnnouncementsScreen() {
 
   const fetchAnnouncements = async () => {
     setLoading(true);
-    // Get current user
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user?.id || null);
     if (!user) {
@@ -38,7 +37,6 @@ export default function HostAnnouncementsScreen() {
       return;
     }
     console.log('Fetching announcements for user:', user.id);
-    // Fetch announcements for this host
     const { data, error } = await supabase
       .from('announcements')
       .select('*')
@@ -90,7 +88,6 @@ export default function HostAnnouncementsScreen() {
       return;
     }
     setSubmitting(true);
-    // Get current user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       Alert.alert('Error', 'User not found');
@@ -100,7 +97,6 @@ export default function HostAnnouncementsScreen() {
     console.log('Submitting announcement for user:', user.id);
     console.log('Announcement data:', { title: title.trim(), description: description.trim() });
     
-    // 1. Insert announcement row without image_url
     let imageUrl = null;
     if (image) {
       imageUrl = await uploadToCloudinary(image);
@@ -127,10 +123,6 @@ export default function HostAnnouncementsScreen() {
     const announcementId = insertData.id;
     console.log('Announcement inserted with ID:', announcementId);
     
-    // 2. Upload the image (if any)
-    // The image upload logic is now handled by Cloudinary in the backend
-    
-    // 3. Update the announcement row with the image URL
     if (imageUrl) {
       console.log('Updating announcement with image URL:', imageUrl);
       const { error: updateError } = await supabase

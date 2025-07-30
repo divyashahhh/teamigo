@@ -20,7 +20,7 @@ export default function MerchScreen() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
-  const [selectedMerch, setSelectedMerch] = useState<any | null>(null); // Use your merch type if available
+  const [selectedMerch, setSelectedMerch] = useState<any | null>(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const [purchaseData, setPurchaseData] = useState<Purchase[]>([]);
   const [loadingPurchases, setLoadingPurchases] = useState(false);
@@ -79,18 +79,14 @@ export default function MerchScreen() {
     if (selectedIds.length === 0) return;
     setLoading(true);
     try {
-      // Fetch merch to get image URLs
       const toDelete = merch.filter(m => selectedIds.includes(m.id));
-      // Delete images from storage
       for (const m of toDelete) {
         if (m.image_url) {
-          // Extract file name from URL
           const parts = m.image_url.split('/');
           const fileName = parts[parts.length - 1];
           await supabase.storage.from('merch-images').remove([fileName]);
         }
       }
-      // Delete from DB
       await supabase.from('merchandise').delete().in('id', selectedIds);
       setSelectedIds([]);
       setSelectMode(false);
@@ -102,11 +98,10 @@ export default function MerchScreen() {
     }
   };
 
-  const handleMerchPress = async (merchItem: any) => { // Replace 'any' with your merch type if available
+  const handleMerchPress = async (merchItem: any) => {
     setSelectedMerch(merchItem);
     setPopupVisible(true);
     setLoadingPurchases(true);
-    // Fetch purchases for this merch
     const { data, error } = await supabase
       .from('purchases')
       .select('*, user:users!purchases_user_id_fkey(id, name, profile_image_url)')

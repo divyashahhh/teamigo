@@ -2,21 +2,17 @@ import { supabase } from '../utils/supabaseClient';
 import { ChatConversation, ChatMessage, ChatUser } from '../types/chat';
 
 class ChatService {
-  // Get current user
   private async getCurrentUser() {
     const { data: { user } } = await supabase.auth.getUser();
     return user;
   }
 
-  // Create or get a conversation between two users
   async createOrGetConversation(otherUserId: string): Promise<string> {
     const currentUser = await this.getCurrentUser();
     if (!currentUser) throw new Error('User not authenticated');
 
-    // Ensure consistent ordering of participants
     const [participant1, participant2] = [currentUser.id, otherUserId].sort();
 
-    // Check if conversation already exists
     const { data: existingConversation } = await supabase
       .from('conversations')
       .select('id')
@@ -28,7 +24,6 @@ class ChatService {
       return existingConversation.id;
     }
 
-    // Create new conversation
     const { data: newConversation, error } = await supabase
       .from('conversations')
       .insert({
@@ -42,7 +37,6 @@ class ChatService {
     return newConversation.id;
   }
 
-  // Send a message
   async sendMessage(conversationId: string, content: string): Promise<void> {
     const currentUser = await this.getCurrentUser();
     if (!currentUser) throw new Error('User not authenticated');
@@ -66,7 +60,6 @@ class ChatService {
 
       console.log('Message inserted successfully:', data);
 
-      // Update conversation's updated_at timestamp
       const { error: updateError } = await supabase
         .from('conversations')
         .update({ updated_at: new Date().toISOString() })
@@ -83,14 +76,12 @@ class ChatService {
     }
   }
 
-  // Get user conversations with last message and other user details
   async getUserConversations(): Promise<ChatConversation[]> {
     const currentUser = await this.getCurrentUser();
     if (!currentUser) throw new Error('User not authenticated');
 
     console.log('Getting conversations for user:', currentUser.id);
 
-    // Get conversations where user is a participant
     const { data: conversations, error } = await supabase
       .from('conversations')
       .select('*')
@@ -104,17 +95,14 @@ class ChatService {
 
     console.log('Found conversations:', conversations);
 
-    // Process conversations to get other user details and last message
     const processedConversations = await Promise.all(
       conversations.map(async (conv) => {
-        // Get the other participant's ID
         const otherUserId = conv.participant1_id === currentUser.id 
           ? conv.participant2_id 
           : conv.participant1_id;
 
         console.log('Processing conversation:', conv.id, 'with other user:', otherUserId);
 
-        // Get other user details
         const { data: otherUser, error: userError } = await supabase
           .from('users')
           .select('id, name, profile_image_url, role')
@@ -125,7 +113,6 @@ class ChatService {
           console.error('Error fetching user details:', userError);
         }
 
-        // Get last message
         const { data: lastMessage, error: messageError } = await supabase
           .from('messages')
           .select('*')
@@ -156,7 +143,6 @@ class ChatService {
     return processedConversations;
   }
 
-  // Get conversation messages
   async getConversationMessages(conversationId: string): Promise<ChatMessage[]> {
     const { data: messages, error } = await supabase
       .from('messages')
@@ -175,7 +161,6 @@ class ChatService {
     }));
   }
 
-  // Subscribe to conversation messages (for real-time updates)
   subscribeToMessages(conversationId: string, callback: (messages: ChatMessage[]) => void) {
     console.log('Setting up real-time subscription for conversation:', conversationId);
     
@@ -192,7 +177,6 @@ class ChatService {
         async (payload) => {
           console.log('Real-time message change detected:', payload);
           try {
-            // Fetch updated messages
             const messages = await this.getConversationMessages(conversationId);
             console.log('Fetched updated messages:', messages.length);
             callback(messages);
@@ -215,7 +199,6 @@ class ChatService {
     return channel;
   }
 
-  // Subscribe to user conversations (for real-time updates)
   async subscribeToConversations(callback: (conversations: ChatConversation[]) => void) {
     const currentUser = await this.getCurrentUser();
     if (!currentUser) return () => {};
@@ -230,7 +213,6 @@ class ChatService {
           table: 'conversations'
         },
         async () => {
-          // Fetch updated conversations
           const conversations = await this.getUserConversations();
           callback(conversations);
         }
@@ -243,7 +225,6 @@ class ChatService {
           table: 'messages'
         },
         async () => {
-          // Fetch updated conversations when messages change
           const conversations = await this.getUserConversations();
           callback(conversations);
         }

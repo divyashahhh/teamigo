@@ -52,10 +52,10 @@ export default function MapsScreen() {
       setDropdownVisible(false);
       return;
     }
-    const lower = search.toLowerCase();
+    const lower = (search || '').toLowerCase();
     const matches = hostLocations.filter(h =>
-      h.name.toLowerCase().includes(lower) ||
-      (Array.isArray(h.tags) && h.tags.some(tag => tag.toLowerCase().includes(lower)))
+      ((h.name || '').toLowerCase().includes(lower)) ||
+      (Array.isArray(h.tags) && h.tags.some(tag => (tag || '').toLowerCase().includes(lower)))
     );
     setFilteredHosts(matches);
     setDropdownVisible(matches.length > 0);
