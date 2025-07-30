@@ -395,7 +395,6 @@ const CalendarPage = () => {
           </View>
         </Animated.ScrollView>
 
-        {/* Add Event Modal */}
         <Modal visible={modalVisible} animationType="slide" transparent>
           <View style={styles.modalWrapper}>
             <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
@@ -448,12 +447,10 @@ const CalendarPage = () => {
           </View>
         </Modal>
 
-        {/* Edit Event Modal */}
         <Modal visible={editModalVisible} animationType="slide" transparent>
           <View style={styles.modalWrapper}>
             <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
             <View style={styles.modalContent}>
-              {/* Close button at top right */}
               <TouchableOpacity
                 style={styles.closeEditButton}
                 onPress={() => setEditModalVisible(false)}

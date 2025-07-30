@@ -132,7 +132,6 @@ export default function LoginScreen(): React.JSX.Element {
             placeholderTextColor="#888"
           />
 
-          {/* Remember Me Checkbox */}
           <TouchableOpacity
             style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
             onPress={() => setRememberMe(!rememberMe)}

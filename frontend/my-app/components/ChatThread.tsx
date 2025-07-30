@@ -192,7 +192,6 @@ export default function ChatThread() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: borderColor }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={[styles.backButtonText, { color: textColor }]}>← Back</Text>
@@ -203,7 +202,6 @@ export default function ChatThread() {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Messages */}
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -232,7 +230,6 @@ export default function ChatThread() {
         windowSize={10}
       />
 
-      {/* Message Input */}
       <View style={[styles.inputContainer, { borderTopColor: borderColor }]}>
         <TextInput
           ref={textInputRef}

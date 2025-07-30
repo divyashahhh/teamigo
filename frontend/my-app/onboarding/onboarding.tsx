@@ -99,7 +99,6 @@ const Onboarding = ({ page: externalPage, setPage: externalSetPage, customButton
           />
         ))}
       </View>
-      {/* Only show button(s) on the last page */}
       {index === onboardingData.length - 1 && customButtons}
     </LinearGradient>
   );

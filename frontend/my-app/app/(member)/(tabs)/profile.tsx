@@ -305,7 +305,6 @@ export default function ProfileScreen() {
   return (
     <LinearGradient colors={['#1A237E', '#222B45', '#0A0F2C']} style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start', minHeight: '100%' }}>
-        {/* Top bar with Settings and Chats buttons */}
         <View style={{ position: 'absolute', top: 40, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18 }}>
           <Pressable onPress={() => setShowSettingsModal(true)} style={{ padding: 8 }}>
             <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
@@ -317,7 +316,6 @@ export default function ProfileScreen() {
             <Image source={require('@/assets/icons/chat.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
           </Pressable>
         </View>
-        {/* Background image with overlayed profile info */}
         <View style={{ position: 'relative', height: 320, width: '100%' }}>
           <Image
             source={backgroundImageUrl ? { uri: backgroundImageUrl } : require('@/assets/images/image.png')}
@@ -329,30 +327,24 @@ export default function ProfileScreen() {
             style={{ position: 'absolute', width: '100%', height: 320 }}
           />
           
-          {/* Additional gradient for text visibility */}
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
             style={{ position: 'absolute', width: '100%', height: 320, top: 0 }}
           />
           
-          {/* Background pressable - excludes the profile area */}
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 5 }}>
-            {/* Top area (above profile) */}
             <Pressable
               onLongPress={pickBackgroundImage}
               style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 60 }}
             />
-            {/* Left area (left of profile) */}
             <Pressable
               onLongPress={pickBackgroundImage}
               style={{ position: 'absolute', top: 60, left: 0, width: '50%', height: 100 }}
             />
-            {/* Right area (right of profile) */}
             <Pressable
               onLongPress={pickBackgroundImage}
               style={{ position: 'absolute', top: 60, right: 0, width: '50%', height: 100 }}
             />
-            {/* Bottom area (below profile) */}
             <Pressable
               onLongPress={pickBackgroundImage}
               style={{ position: 'absolute', top: 160, left: 0, right: 0, bottom: 0 }}
@@ -371,7 +363,7 @@ export default function ProfileScreen() {
                 height: 100,
                 alignItems: 'center',
                 justifyContent: 'center',
-                zIndex: 7, // Higher than background pressable
+                zIndex: 7,
               }}
               onLongPress={pickImage}
             >
@@ -389,7 +381,6 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-        {/* My Clubs section */}
         <View style={{ marginTop: 24, paddingHorizontal: 20 }}>
           <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#fff', marginBottom: 16 }}>My Clubs</Text>
           {loadingClubs ? (
@@ -421,7 +412,6 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
-        {/* Settings Modal */}
         <Modal visible={showSettingsModal} animationType="fade" transparent onRequestClose={() => setShowSettingsModal(false)}>
           <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-start', alignItems: 'flex-start' }} onPress={() => setShowSettingsModal(false)}>
             <View style={{ marginTop: 80, marginLeft: 20, backgroundColor: '#fff', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 24, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 }}>
@@ -435,13 +425,11 @@ export default function ProfileScreen() {
             </View>
           </Pressable>
         </Modal>
-        {/* Edit Profile Modal */}
         <Modal visible={showEditModal} animationType="fade" transparent onRequestClose={() => setShowEditModal(false)}>
           <Pressable style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]} onPress={() => setShowEditModal(false)}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
               
-              {/* Profile Picture Section */}
               <Text style={styles.inputLabel}>Profile Picture</Text>
               <Pressable 
                 style={styles.imageEditButton}
@@ -450,7 +438,6 @@ export default function ProfileScreen() {
                 <Text style={styles.imageEditButtonText}>Change Profile Picture</Text>
               </Pressable>
               
-              {/* Background Image Section */}
               <Text style={styles.inputLabel}>Background Image</Text>
               <Pressable 
                 style={styles.imageEditButton}
