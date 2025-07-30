@@ -130,7 +130,6 @@ export default function MerchScreen() {
 
   return (
     <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
-      {/* Done button in select mode, at absolute top right of the screen */}
       {selectMode && (
         <View style={[StyleSheet.absoluteFillObject, { pointerEvents: 'box-none' }]}>
           <View style={styles.doneButtonScreenEdge}>
@@ -214,7 +213,6 @@ export default function MerchScreen() {
           )}
         </View>
       </View>
-      {/* Purchases Popup Modal */}
       <Modal visible={popupVisible} animationType="slide" transparent onRequestClose={() => setPopupVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { width: '90%', maxHeight: '90%', alignItems: 'stretch' }]}> 

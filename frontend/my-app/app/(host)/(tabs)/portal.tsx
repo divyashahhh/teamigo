@@ -406,8 +406,6 @@ export default function PortalScreen() {
   return (
     <LinearGradient colors={['#1A237E', '#222B45', '#0A0F2C']} style={{ flex: 1 }}>
       <View style={[styles.mainContainer, { backgroundColor: 'transparent' }]}>
-        {/* Remove the header with chats and analytics buttons at the top right */}
-        {/* Add a top bar with settings on the left and chats on the right */}
         <View style={{ position: 'absolute', top: 40, left: 0, right: 0, zIndex: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18 }}>
           <Pressable onPress={() => setShowSettingsModal(true)} style={{ padding: 8 }}>
             <Image source={require('@/assets/icons/settings.png')} style={{ width: 28, height: 28, tintColor: '#00b2a9' }} />
@@ -426,7 +424,6 @@ export default function PortalScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-          {/* Add background image at the top, similar to profile.tsx: */}
           <View style={{ position: 'relative', height: 320, width: '100%' }}>
             <Image
               source={backgroundImageUrl ? { uri: backgroundImageUrl } : require('@/assets/images/image.png')}
@@ -438,37 +435,30 @@ export default function PortalScreen() {
               style={{ position: 'absolute', width: '100%', height: 320 }}
             />
             
-            {/* Additional gradient for text visibility */}
             <LinearGradient
               colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
               style={{ position: 'absolute', width: '100%', height: 320, top: 0 }}
             />
             
-            {/* Background pressable - excludes the profile area */}
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 5 }}>
-              {/* Top area (above profile) */}
               <Pressable
                 onLongPress={pickBackgroundImage}
                 style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 60 }}
               />
-              {/* Left area (left of profile) */}
               <Pressable
                 onLongPress={pickBackgroundImage}
                 style={{ position: 'absolute', top: 60, left: 0, width: '50%', height: 100 }}
               />
-              {/* Right area (right of profile) */}
               <Pressable
                 onLongPress={pickBackgroundImage}
                 style={{ position: 'absolute', top: 60, right: 0, width: '50%', height: 100 }}
               />
-              {/* Bottom area (below profile) */}
               <Pressable
                 onLongPress={pickBackgroundImage}
                 style={{ position: 'absolute', top: 160, left: 0, right: 0, bottom: 0 }}
               />
             </View>
             
-            {/* Show loading indicator when saving */}
             {saving && (
               <View style={{
                 position: 'absolute',
@@ -486,7 +476,6 @@ export default function PortalScreen() {
               </View>
           )}
 
-            {/* Profile image and info overlays remain as before, but now on top of the background image */}
             <View style={{ position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', zIndex: 3 }}>
               <Pressable
                 style={{
@@ -499,7 +488,7 @@ export default function PortalScreen() {
                   height: 100,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  zIndex: 7, // Higher than background pressable
+                  zIndex: 7,
                 }}
                 onLongPress={pickImage}
               >
@@ -518,7 +507,6 @@ export default function PortalScreen() {
           </View>
         </View>
 
-        {/* Tags Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Tags</Text>
@@ -559,7 +547,6 @@ export default function PortalScreen() {
             )}
           </View>
 
-          {/* Tag Suggestions */}
           {showTagSuggestions && tagInput.length > 0 && (
             <View style={styles.suggestionsContainer}>
               <FlatList
@@ -583,7 +570,6 @@ export default function PortalScreen() {
           )}
         </View>
 
-        {/* Location Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Location</Text>
@@ -622,7 +608,6 @@ export default function PortalScreen() {
             )}
           </Pressable>
 
-          {/* Map Preview */}
           {location && (
             <View style={styles.mapContainer}>
               <MapView
@@ -667,7 +652,6 @@ export default function PortalScreen() {
         </View>
       </ScrollView>
 
-      {/* Edit Profile Modal */}
       <Modal visible={showEditModal} animationType="slide" transparent>
         <KeyboardAvoidingView 
           style={styles.modalOverlay} 
@@ -677,7 +661,6 @@ export default function PortalScreen() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
                 
-                {/* Profile Picture Section */}
                 <Text style={styles.inputLabel}>Profile Picture</Text>
                 <Pressable 
                   style={styles.imageEditButton}
@@ -686,7 +669,6 @@ export default function PortalScreen() {
                   <Text style={styles.imageEditButtonText}>Change Profile Picture</Text>
                 </Pressable>
                 
-                {/* Background Image Section */}
                 <Text style={styles.inputLabel}>Background Image</Text>
                 <Pressable 
                   style={styles.imageEditButton}
@@ -738,7 +720,6 @@ export default function PortalScreen() {
         </KeyboardAvoidingView>
       </Modal>
       
-      {/* Location picker modal */}
       <Modal visible={locationModalVisible} animationType="slide">
         <View style={styles.locationModalContainer}>
           <View style={styles.locationModalHeader}>
@@ -799,7 +780,6 @@ export default function PortalScreen() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
               
-              {/* Profile Picture Section */}
               <Text style={styles.inputLabel}>Profile Picture</Text>
               <Pressable 
                 style={styles.imageEditButton}
@@ -808,7 +788,6 @@ export default function PortalScreen() {
                 <Text style={styles.imageEditButtonText}>Change Profile Picture</Text>
               </Pressable>
               
-              {/* Background Image Section */}
               <Text style={styles.inputLabel}>Background Image</Text>
               <Pressable 
                 style={styles.imageEditButton}

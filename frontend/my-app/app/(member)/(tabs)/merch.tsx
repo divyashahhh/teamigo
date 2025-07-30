@@ -224,11 +224,9 @@ export default function MemberMerch() {
   return (
     <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        {/* Filter Button */}
         <TouchableOpacity style={[styles.filterButton, { backgroundColor: '#222B45' }]} onPress={() => setFilterModalVisible(true)}>
           <Text style={[styles.filterButtonText, { color: '#fff' }]}>Filter</Text>
         </TouchableOpacity>
-        {/* Show selected org */}
         {selectedOrg && (
           <View style={[styles.selectedOrgBar, { backgroundColor: 'rgba(255,255,255,0.7)' }] }>
             <Text style={[styles.selectedOrgText, { color: '#222B45' }] }>
@@ -262,7 +260,6 @@ export default function MemberMerch() {
           ListEmptyComponent={<Text style={[styles.empty, { color: '#888' }]}>No merchandise from your subscriptions yet.</Text>}
         />
 
-        {/* Simple Popup Modal for merch details */}
         <Modal visible={popupVisible} animationType="slide" transparent onRequestClose={() => setPopupVisible(false)}>
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, { width: 320, backgroundColor: 'rgba(255,255,255,0.98)' }]}>
@@ -290,14 +287,12 @@ export default function MemberMerch() {
           </View>
         </Modal>
 
-        {/* Purchase Modal */}
         <Modal visible={purchaseModalVisible} animationType="slide" transparent onRequestClose={() => setPurchaseModalVisible(false)}>
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, { width: '90%', maxHeight: '90%', backgroundColor: 'rgba(255,255,255,0.98)' }]}>
               <ScrollView showsVerticalScrollIndicator={false}>
                 {selectedMerch && (
                   <>
-                    {/* Merch Details */}
                     <View style={styles.merchSection}>
                       {selectedMerch.image_url ? (
                         <Image source={{ uri: selectedMerch.image_url }} style={styles.merchImage} />
@@ -311,7 +306,6 @@ export default function MemberMerch() {
                       <Text style={styles.merchDescription}>{selectedMerch.description}</Text>
                     </View>
 
-                    {/* Quantity Selector */}
                     <View style={styles.quantitySection}>
                       <Text style={styles.sectionTitle}>Quantity</Text>
                       <View style={styles.quantityContainer}>
@@ -347,7 +341,6 @@ export default function MemberMerch() {
                       </View>
                     )}
 
-                    {/* Payment Section */}
                     <View style={styles.paymentSection}>
                       <Text style={styles.sectionTitle}>Payment</Text>
                       <View style={styles.paymentMethod}>
@@ -360,7 +353,6 @@ export default function MemberMerch() {
                       </View>
                     </View>
 
-                    {/* Purchase Button */}
                     <TouchableOpacity 
                       style={[styles.purchaseButton, submitting && styles.purchaseButtonDisabled]}
                       onPress={handlePurchase}
@@ -373,7 +365,6 @@ export default function MemberMerch() {
                       )}
                     </TouchableOpacity>
 
-                    {/* Close Button */}
                     <TouchableOpacity 
                       style={[styles.closeModalButton, { marginTop: 16 }]} 
                       onPress={() => setPurchaseModalVisible(false)}
@@ -387,7 +378,6 @@ export default function MemberMerch() {
           </View>
         </Modal>
 
-        {/* Modal for org filter */}
         <Modal visible={filterModalVisible} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, { backgroundColor: 'rgba(255,255,255,0.98)' }]}>

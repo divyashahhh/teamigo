@@ -76,7 +76,6 @@ export function AnalyticsModal({ onClose }: { onClose: () => void }) {
             <Text style={styles.earnings}>${totalEarnings?.toFixed(2) ?? '--'}</Text>
           </View>
         )}
-        {/* Dummy Bar Chart */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Monthly Earnings</Text>
           <Svg width={320} height={160}>

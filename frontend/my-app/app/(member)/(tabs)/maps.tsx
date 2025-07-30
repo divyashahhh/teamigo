@@ -115,7 +115,6 @@ export default function MapsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Search Bar Overlay */}
       <View style={styles.searchBarContainer}>
         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#222B45', borderRadius: 24, paddingHorizontal: 12, paddingVertical: 6, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, elevation: 6 }}>
           <Ionicons name="search" size={20} color="#fff" style={{ marginRight: 8 }} />
@@ -127,7 +126,6 @@ export default function MapsScreen() {
             onChangeText={setSearch}
             onFocus={() => setDropdownVisible(filteredHosts.length > 0)}
           />
-          {/* Optional: Add a filter/toggle button on the right */}
           <TouchableOpacity style={{ marginLeft: 8, padding: 4 }}>
             <Ionicons name="options-outline" size={20} color="#fff" />
           </TouchableOpacity>

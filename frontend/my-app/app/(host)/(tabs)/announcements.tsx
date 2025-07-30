@@ -236,7 +236,6 @@ export default function HostAnnouncementsScreen() {
   return (
     <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        {/* Done button in select mode, at absolute top right of the screen, overlaying header */}
         {selectMode && (
           <TouchableOpacity
             style={styles.doneButtonScreenEdge}
@@ -260,7 +259,6 @@ export default function HostAnnouncementsScreen() {
               announcements.map(renderAnnouncement)
             )}
           </ScrollView>
-          {/* Floating Plus & Trash Buttons */}
           <View style={styles.fabRow}>
             {!selectMode ? (
               <TouchableOpacity
@@ -280,7 +278,6 @@ export default function HostAnnouncementsScreen() {
               </TouchableOpacity>
             )}
           </View>
-          {/* Modal for New Announcement */}
           <Modal visible={showModal} animationType="slide" transparent>
             <KeyboardAvoidingView
               style={styles.modalOverlay}
@@ -289,7 +286,6 @@ export default function HostAnnouncementsScreen() {
               <View style={styles.modalCenterWrap}>
                 <View style={styles.modalContent}>
                   <Text style={styles.modalTitle}>New Announcement</Text>
-                  {/* Image Picker */}
                   <Pressable style={styles.circularFrame} onPress={pickImage}>
                     {image ? (
                       <Image source={{ uri: image }} style={styles.profileImage} resizeMode="cover" />

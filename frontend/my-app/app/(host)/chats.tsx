@@ -125,7 +125,6 @@ export default function HostChats() {
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: borderColor }]}>
         <TouchableOpacity 
           style={styles.backButton} 

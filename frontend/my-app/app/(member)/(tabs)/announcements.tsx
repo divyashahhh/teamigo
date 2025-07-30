@@ -40,11 +40,9 @@ export default function MemberAnnouncements() {
   return (
     <LinearGradient colors={['#EAF0FF', '#FFF6E0', '#C6FFF6']} style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        {/* Filter Button */}
         <TouchableOpacity style={[styles.filterButton, { backgroundColor: '#222B45' }]} onPress={() => setFilterModalVisible(true)}>
           <Text style={[styles.filterButtonText, { color: '#fff' }]}>Filter</Text>
         </TouchableOpacity>
-        {/* Show selected org */}
         {selectedOrg && (
           <View style={[styles.selectedOrgBar, { backgroundColor: 'rgba(255,255,255,0.7)' }] }>
             <Text style={[styles.selectedOrgText, { color: '#222B45' }] }>
@@ -87,7 +85,6 @@ export default function MemberAnnouncements() {
   )}
   ListEmptyComponent={<Text style={[styles.empty, { color: '#888' }]}>No announcements from your subscriptions yet.</Text>}
 />
-        {/* Modal for org filter */}
         <Modal visible={filterModalVisible} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, { backgroundColor: 'rgba(255,255,255,0.98)' }] }>
